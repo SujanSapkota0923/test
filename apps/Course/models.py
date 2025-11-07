@@ -207,10 +207,12 @@ class LiveClass(models.Model):
         ordering = ("-start_time",)
 
     def clean(self):
-        if self.end_time <= self.start_time:
-            raise ValidationError("end_time must be after start_time")
+        # Check if both start_time and end_time are provided before comparing
+        if self.start_time and self.end_time:
+            if self.end_time <= self.start_time:
+                raise ValidationError("end_time must be after start_time")
         # Ensure hosts are teachers (should be enforced by limit_choices_to but double-check)
-        if self.hosts.role != User.Role.TEACHER:
+        if self.hosts and self.hosts.role != User.Role.TEACHER:
             raise ValidationError("All hosts must be teachers.")
 
     def is_live(self):
@@ -226,7 +228,7 @@ class LiveClass(models.Model):
     def __str__(self):
         return f"{self.title} — {self.subject} ({self.start_time:%Y-%m-%d %H:%M})"
 
-
+# extra curricular activities refers to course in this project.
 class ExtraCurricularActivity(models.Model):
     '''
     Represents an extra-curricular activity or event.
@@ -237,6 +239,7 @@ class ExtraCurricularActivity(models.Model):
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
     participants = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name="extracurricular_activities", blank=True)
+    cost = models.DecimalField(max_digits=8, decimal_places=2, default=0, help_text="Cost to participate in the activity (0 for free)")
     start_time = models.DateTimeField()
     end_time = models.DateTimeField()
     created_at = models.DateTimeField(auto_now_add=True)
@@ -246,8 +249,10 @@ class ExtraCurricularActivity(models.Model):
         ordering = ("-start_time",)
 
     def clean(self):
-        if self.end_time <= self.start_time:
-            raise ValidationError("end_time must be after start_time")
+        # Check if both start_time and end_time are provided before comparing
+        if self.start_time and self.end_time:
+            if self.end_time <= self.start_time:
+                raise ValidationError("end_time must be after start_time")
 
     def __str__(self):
         return self.title
@@ -260,12 +265,14 @@ class Video(models.Model):
     description = models.TextField(blank=True)
     url = models.URLField(max_length=500, help_text="Link to the video (YouTube/Vimeo/...)", unique=True)
     level = models.ForeignKey(AcademicLevel, related_name="videos", on_delete=models.CASCADE, blank=True, null=True)
+    course = models.ForeignKey(ExtraCurricularActivity, related_name="videos", on_delete=models.SET_NULL, null=True, blank=True)
     subject = models.ForeignKey(Subject, related_name="videos", on_delete=models.SET_NULL, null=True, blank=True)
     stream = models.ManyToManyField(Stream, related_name="videos", blank=True)
     teacher = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="uploaded_videos", limit_choices_to={"role": User.Role.TEACHER}, blank=True, null=True, help_text="Must be a teacher")
     cost = models.DecimalField(max_digits=8, decimal_places=2, default=0, help_text="Cost to access the video (0.00 for free)")
     uploaded_at = models.DateTimeField(auto_now_add=True)
     image = models.ImageField(upload_to='video_thumbnails/', blank=True, null=True)
+    course = models.ForeignKey(ExtraCurricularActivity, related_name='videos', on_delete=models.CASCADE, blank=True, null=True)
 
 
     # if the cost is negative, raise validation error

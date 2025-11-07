@@ -1,5 +1,6 @@
 {% extends 'dashboard/base.html' %}
 {% load static %}
+{% load cutom_filters %}
 {% block title %}{{ item_name }} Details{% endblock %}
 {% block content %}
 <div class="app-wrapper">
@@ -60,7 +61,38 @@
                                             </div>
                                             <div class="col-sm-8">
                                                 <p class="mb-0" id="view_{{ field.name }}">
-                                                    {% if field.value %}
+                                                    {% if field.name == 'videos' %}
+                                                        {# Special handling for videos field #}
+                                                        {% if object.videos.all %}
+                                                            <div class="list-group">
+                                                                {% for video in object.videos.all %}
+                                                                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                                                                        <div>
+                                                                            <svg width="1em" height="1em" fill="currentColor" class="bi bi-play-circle me-2" viewBox="0 0 16 16">
+                                                                                <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+                                                                                <path d="M6.271 5.055a.5.5 0 0 1 .52.038l3.5 2.5a.5.5 0 0 1 0 .814l-3.5 2.5A.5.5 0 0 1 6 10.5v-5a.5.5 0 0 1 .271-.445z"/>
+                                                                            </svg>
+                                                                            <strong>{{ video.title }}</strong>
+                                                                            {% if video.cost > 0 %}
+                                                                                <span class="badge bg-warning text-dark ms-2">${{ video.cost }}</span>
+                                                                            {% else %}
+                                                                                <span class="badge bg-success ms-2">Free</span>
+                                                                            {% endif %}
+                                                                        </div>
+                                                                        <a href="{{ video.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                                                            <svg width="1em" height="1em" fill="currentColor" class="bi bi-link-45deg" viewBox="0 0 16 16">
+                                                                                <path d="M4.715 6.542 3.343 7.914a3 3 0 1 0 4.243 4.243l1.828-1.829A3 3 0 0 0 8.586 5.5L8 6.086a1.002 1.002 0 0 0-.154.199 2 2 0 0 1 .861 3.337L6.88 11.45a2 2 0 1 1-2.83-2.83l.793-.792a4.018 4.018 0 0 1-.128-1.287z"/>
+                                                                                <path d="M6.586 4.672A3 3 0 0 0 7.414 9.5l.775-.776a2 2 0 0 1-.896-3.346L9.12 3.55a2 2 0 1 1 2.83 2.83l-.793.792c.112.42.155.855.128 1.287l1.372-1.372a3 3 0 1 0-4.243-4.243L6.586 4.672z"/>
+                                                                            </svg>
+                                                                            View
+                                                                        </a>
+                                                                    </div>
+                                                                {% endfor %}
+                                                            </div>
+                                                        {% else %}
+                                                            <span class="text-muted fst-italic">No videos linked</span>
+                                                        {% endif %}
+                                                    {% elif field.value %}
                                                         {% if field.field.widget.input_type == 'checkbox' %}
                                                             {% if field.value %}
                                                                 <span class="badge bg-success">Yes</span>
@@ -77,6 +109,36 @@
                                                                 </svg>
                                                                 Download
                                                             </a>
+                                                        {% elif field.field.widget.input_type == 'select' %}
+                                                            {# ForeignKey field - show object name #}
+                                                            {{ object|get_display_value:field.name }}
+                                                        {% elif field.name == 'participants' or field.name == 'streams' or field.name == 'stream' %}
+                                                            {# ManyToMany field - show all selected objects #}
+                                                            {% if field.name == 'participants' %}
+                                                                {% if object.participants.exists %}
+                                                                    {% for item in object.participants.all %}
+                                                                        <span class="badge bg-primary me-1">{{ item }}</span>
+                                                                    {% endfor %}
+                                                                {% else %}
+                                                                    <span class="text-muted fst-italic">None selected</span>
+                                                                {% endif %}
+                                                            {% elif field.name == 'streams' %}
+                                                                {% if object.streams.exists %}
+                                                                    {% for item in object.streams.all %}
+                                                                        <span class="badge bg-primary me-1">{{ item }}</span>
+                                                                    {% endfor %}
+                                                                {% else %}
+                                                                    <span class="text-muted fst-italic">None selected</span>
+                                                                {% endif %}
+                                                            {% elif field.name == 'stream' %}
+                                                                {% if object.stream.exists %}
+                                                                    {% for item in object.stream.all %}
+                                                                        <span class="badge bg-primary me-1">{{ item }}</span>
+                                                                    {% endfor %}
+                                                                {% else %}
+                                                                    <span class="text-muted fst-italic">None selected</span>
+                                                                {% endif %}
+                                                            {% endif %}
                                                         {% else %}
                                                             {{ field.value }}
                                                         {% endif %}
@@ -133,6 +195,102 @@
                                             {% for error in form.non_field_errors %}
                                                 {{ error }}
                                             {% endfor %}
+                                        </div>
+                                    {% endif %}
+
+
+
+
+
+                                    {% if formset %}
+                                        <hr class="my-4">
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <h5 class="mb-0">
+                                                <svg width="1em" height="1em" fill="currentColor" class="bi bi-camera-video me-2" viewBox="0 0 16 16">
+                                                    <path fill-rule="evenodd" d="M0 5a2 2 0 0 1 2-2h7.5a2 2 0 0 1 1.983 1.738l3.11-1.382A1 1 0 0 1 16 4.269v7.462a1 1 0 0 1-1.406.913l-3.111-1.382A2 2 0 0 1 9.5 13H2a2 2 0 0 1-2-2V5zm11.5 5.175 3.5 1.556V4.269l-3.5 1.556v4.35zM2 4a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h7.5a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1H2z"/>
+                                                </svg>
+                                                Related Videos
+                                            </h5>
+                                            <span class="badge bg-primary">{{ formset.total_form_count }} Video(s)</span>
+                                        </div>
+
+                                        {{ formset.management_form }}
+
+                                        <div id="formset-container">
+                                            {% for video_form in formset %}
+                                                <div class="card mb-3 formset-form" id="formset-{{ forloop.counter0 }}">
+                                                    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                                                        <h6 class="mb-0">
+                                                            <svg width="1em" height="1em" fill="currentColor" class="bi bi-play-circle me-2" viewBox="0 0 16 16">
+                                                                <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+                                                                <path d="M6.271 5.055a.5.5 0 0 1 .52.038l3.5 2.5a.5.5 0 0 1 0 .814l-3.5 2.5A.5.5 0 0 1 6 10.5v-5a.5.5 0 0 1 .271-.445z"/>
+                                                            </svg>
+                                                            Video #{{ forloop.counter }}
+                                                        </h6>
+                                                        {% if video_form.instance.pk %}
+                                                            <span class="badge bg-success">Existing</span>
+                                                        {% else %}
+                                                            <span class="badge bg-info">New</span>
+                                                        {% endif %}
+                                                    </div>
+                                                    <div class="card-body">
+                                                        <div class="row">
+                                                            {% for field in video_form.visible_fields %}
+                                                                {% if field.name != 'DELETE' %}
+                                                                    <div class="col-md-{% if field.name == 'title' or field.name == 'url' %}6{% elif field.name == 'description' %}12{% else %}4{% endif %} mb-3">
+                                                                        <label for="{{ field.id_for_label }}" class="form-label fw-semibold">
+                                                                            {{ field.label }}
+                                                                            {% if field.field.required %}
+                                                                                <span class="text-danger">*</span>
+                                                                            {% endif %}
+                                                                        </label>
+                                                                        {{ field }}
+                                                                        {% if field.help_text %}
+                                                                            <div class="form-text">{{ field.help_text }}</div>
+                                                                        {% endif %}
+                                                                        {% if field.errors %}
+                                                                            <div class="invalid-feedback d-block">
+                                                                                {% for error in field.errors %}
+                                                                                    {{ error }}
+                                                                                {% endfor %}
+                                                                            </div>
+                                                                        {% endif %}
+                                                                    </div>
+                                                                {% endif %}
+                                                            {% endfor %}
+                                                        </div>
+
+                                                        {# Delete checkbox #}
+                                                        {% for field in video_form.visible_fields %}
+                                                            {% if field.name == 'DELETE' %}
+                                                                <div class="form-check mt-2">
+                                                                    {{ field }}
+                                                                    <label class="form-check-label text-danger" for="{{ field.id_for_label }}">
+                                                                        <svg width="1em" height="1em" fill="currentColor" class="bi bi-trash me-1" viewBox="0 0 16 16">
+                                                                            <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
+                                                                            <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
+                                                                        </svg>
+                                                                        Mark for deletion
+                                                                    </label>
+                                                                </div>
+                                                            {% endif %}
+                                                        {% endfor %}
+
+                                                        {# Hidden fields #}
+                                                        {% for hidden_field in video_form.hidden_fields %}
+                                                            {{ hidden_field }}
+                                                        {% endfor %}
+                                                    </div>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+
+                                        <div class="alert alert-info mt-3">
+                                            <svg width="1em" height="1em" fill="currentColor" class="bi bi-info-circle me-2" viewBox="0 0 16 16">
+                                                <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+                                                <path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/>
+                                            </svg>
+                                            <strong>Tip:</strong> You can add, edit, or remove videos for this course. Fill in the empty form to add a new video. Check "Mark for deletion" to remove existing videos.
                                         </div>
                                     {% endif %}
 

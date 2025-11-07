@@ -115,7 +115,7 @@ def add_live_class(request):
         if form.is_valid():
             form.save()
             messages.success(request, 'Live Class added successfully!')
-            return redirect('dashboard:video_home')
+            return redirect('dashboard:live_classes')
     else:
         form = LiveClassForm()
     
@@ -140,7 +140,7 @@ def add_activity(request):
     
     context = {
         'form': form,
-        'item_name': 'Extra-Curricular Activity',
+        'item_name': 'Courses',
         'back_url': 'activity_list',
     }
     return render(request, 'dashboard/add_item.html', context)

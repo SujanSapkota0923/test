@@ -204,11 +204,12 @@ class ExtraCurricularActivityForm(forms.ModelForm):
 class VideoUploadForm(forms.ModelForm):
     class Meta:
         model = Video
-        fields = ['title', 'description', 'url', 'level', 'subject', 'stream','teacher','cost', 'image']
+        fields = ['title', 'description', 'url', 'course', 'level', 'subject', 'stream','teacher','cost', 'image']
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter video title'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Enter description'}),
             'url': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'Enter video URL'}),
+            'course': forms.Select(attrs={'class': 'form-select', 'placeholder': 'Select extra-curricular activity (if applicable)'}),
             'level': forms.Select(attrs={'class': 'form-select', 'placeholder': 'Select academic level'}),
             'subject': forms.Select(attrs={'class': 'form-select', 'placeholder': 'Select subject'}),
             'stream': forms.SelectMultiple(attrs={'class': 'form-select', 'placeholder': 'Select stream (if applicable)'}),

@@ -1,6 +1,14 @@
+
+# This form is for the Course Management System application.
+# this form will be shown when previous object are needed to be edited.
+
+
+
+
 from django import forms
 from apps.Course.models import User
 from django.contrib.auth.forms import UserCreationForm
+from django.forms import inlineformset_factory  
 
 class UserSignUpForm(UserCreationForm):
     class Meta:
@@ -112,7 +120,7 @@ class StreamForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         # Filter to only show levels that allow streams
         self.fields['level'].queryset = AcademicLevel.objects.filter(allows_streams=True)
-
+    
 
 # ============================================
 # SUBJECT FORM
@@ -182,13 +190,29 @@ class LiveClassForm(forms.ModelForm):
 # ============================================
 # EXTRA CURRICULAR ACTIVITY FORM
 # ============================================
+
+from django.forms import inlineformset_factory
+from apps.Course import models
 class ExtraCurricularActivityForm(forms.ModelForm):
+    # Field to select existing videos to associate with this activity
+    videos = forms.ModelMultipleChoiceField(
+        queryset=models.Video.objects.all(),
+        required=False,
+        widget=forms.SelectMultiple(attrs={
+            'class': 'form-select',
+            'size': '10',
+            'style': 'min-height: 200px;'
+        }),
+        help_text='Hold Ctrl/Cmd to select multiple videos. Selected videos will be linked to this course.'
+    )
+    
     class Meta:
         model = ExtraCurricularActivity
-        fields = ['title', 'description', 'start_time', 'end_time', 'image', 'participants']
+        fields = ['title', 'description', 'cost', 'start_time', 'end_time', 'image', 'participants']
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., Annual Sports Day'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
+            'cost': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Enter cost (0 for free)'}),
             'start_time': forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}),
             'end_time': forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}),
             'image': forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/*'}),
@@ -197,7 +221,19 @@ class ExtraCurricularActivityForm(forms.ModelForm):
         help_texts = {
             'participants': 'Hold Ctrl/Cmd to select multiple participants (optional)'
         }
-
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # If editing an existing activity, pre-select its videos
+        if self.instance and self.instance.pk:
+            self.fields['videos'].initial = self.instance.videos.all()
+    
+    def save(self, commit=True):
+        instance = super().save(commit=commit)
+        if commit:
+            # Update the videos associated with this activity
+            instance.videos.set(self.cleaned_data['videos'])
+        return instance
 
 # ============================================
 # VIDEO FORM
@@ -205,13 +241,14 @@ class ExtraCurricularActivityForm(forms.ModelForm):
 class VideoForm(forms.ModelForm):
     class Meta:
         model = Video
-        fields = ['title', 'description', 'url', 'level', 'subject', 'stream', 
+        fields = ['title', 'description', 'url', 'level','course', 'subject', 'stream', 
                   'teacher', 'cost', 'image']
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., Algebra Basics'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'url': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'https://youtube.com/...'}),
             'level': forms.Select(attrs={'class': 'form-select'}),
+            'course': forms.Select(attrs={'class': 'form-select'}),
             'subject': forms.Select(attrs={'class': 'form-select'}),
             'stream': forms.SelectMultiple(attrs={'class': 'form-select', 'size': '5'}),
             'teacher': forms.Select(attrs={'class': 'form-select'}),
@@ -227,3 +264,28 @@ class VideoForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         # Only show teachers
         self.fields['teacher'].queryset = User.objects.filter(role=User.Role.TEACHER)
+
+
+# ============================================
+# VIDEO INLINE FORMSET FOR ACTIVITY
+# ============================================
+VideoFormSet = inlineformset_factory(
+    ExtraCurricularActivity,
+    Video,
+    fields=['title', 'description', 'url', 'course', 'level', 'subject', 'stream', 'teacher', 'cost', 'image'],
+    extra=1,
+    can_delete=True,
+    widgets={
+        'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Video title'}),
+        'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Brief description'}),
+        'url': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'https://youtube.com/...'}),
+        'course': forms.Select(attrs={'class': 'form-select'}),
+        'level': forms.Select(attrs={'class': 'form-select'}),
+        'subject': forms.Select(attrs={'class': 'form-select'}),
+        'stream': forms.SelectMultiple(attrs={'class': 'form-select', 'size': '3'}),
+        'teacher': forms.Select(attrs={'class': 'form-select'}),
+        'cost': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'step': '0.01', 'placeholder': '0.00'}),
+        'image': forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/*'}),
+    }
+)
+

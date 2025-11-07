@@ -244,13 +244,13 @@ def dashboard_view(request):
     #     'limited_live_classes': live_classes[:3],
     # })
 
-    # # === 7. Videos ===
-    # videos = Video.objects.all().order_by('-pk')
-    # context.update({
-    #     'videos': videos,
-    #     'video_count': videos.count(),
-    #     'limited_videos': videos[:3],
-    # })
+    # === 7. Videos ===
+    videos = Video.objects.all().order_by('-pk')
+    context.update({
+        'videos': videos,
+        'video_count': videos.count(),
+        'limited_videos': videos[:3],
+    })
 
     return render(request, 'dashboard/index.html', context)
 
@@ -682,15 +682,15 @@ def liveclass_delete(request, pk):
 #     activities = ExtraCurricularActivity.objects.all()
 #     context = {'activities': activities, 'item_name': 'Activity'}
 #     return render(request, 'dashboard/activity_list.html', context)
-
 @login_required
 def activity_detail(request, pk):
     activity = get_object_or_404(models.ExtraCurricularActivity, pk=pk)
     if request.method == 'POST':
         form = ExtraCurricularActivityForm(request.POST, request.FILES, instance=activity)
+        
         if form.is_valid():
             form.save()
-            messages.success(request, f'Activity "{activity.title}" updated successfully!')
+            messages.success(request, f'Activity "{activity.title}" and related videos updated successfully!')
             return redirect('dashboard:activity_detail', pk=pk)
         else:
             messages.error(request, 'Please correct the errors below.')
