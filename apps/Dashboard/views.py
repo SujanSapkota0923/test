@@ -113,10 +113,6 @@ def teacher_list_view(request):
     return render(request, 'dashboard/teachers.html')
 
 @login_required
-def create_new_view(request):
-    return render(request, 'dashboard/create_new.html')
-
-@login_required
 def stream_list_view(request):
     streams = models.Stream.objects.all().order_by('-pk')
     context={
@@ -290,17 +286,20 @@ def login_view(request):
             username = form.cleaned_data['username']
             password = form.cleaned_data['password']
             user = authenticate(request, username=username, password=password)
+            
+            # Check if user exists first
             if user is None:
                 messages.error(request, "Invalid username or password.")
                 return redirect('dashboard:login')
-            elif user.role != models.User.Role.ADMIN:
+            
+            # Now check permissions
+            if user.is_superuser or user.role == models.User.Role.ADMIN:
+                login(request, user)
+                messages.success(request, f"Welcome back, {user.get_full_name() or user.username}!")
+                return redirect('dashboard:index')  # ← This was missing!
+            else:
                 messages.error(request, "You do not have permission to access the dashboard.")
                 return redirect('dashboard:login')
-            else:   
-                login(request, user)
-                messages.success(request, f"Welcome back, {user.username.title()}!")
-                return redirect('dashboard:index')
-            
         else:
             messages.error(request, "Please correct the errors below.")
     else:
@@ -439,7 +438,7 @@ def level_delete(request, pk):
         name = level.name
         level.delete()
         messages.success(request, f'Level "{name}" deleted successfully!')
-        return redirect('dashboard:level_list')
+        return redirect('dashboard:index')
     return redirect('dashboard:level_detail', pk=pk)
 
 

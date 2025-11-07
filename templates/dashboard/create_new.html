@@ -1,207 +1,188 @@
-{% extends 'dashboard/base.html' %} {% load static %} {% block title %}Create
-New{% endblock %} {% block content %}
+{% extends 'dashboard/base.html' %}
+{% load static %}
+{% block title %}Create New{% endblock %}
+{% block content %}
 <div class="app-wrapper">
   <div class="app-content pt-3 p-md-3 p-lg-4">
     <div class="container-xl">
-      <div class="row">
-        <div class="col-lg-8">
-          <div class="card mb-4">
-            <div class="card-body">
-              <h5 class="card-title">Create New Item</h5>
+      
+      <!-- Enhanced Page Header -->
+      <div class="create-new-header mb-5 text-center">
+        <div class="icon-wrapper mb-3">
+          <i class="fas fa-magic"></i>
+        </div>
+        <h1 class="display-4 fw-bold mb-2">Create Something New</h1>
+        <p class="lead text-muted">Choose what you'd like to create and fill in the details</p>
+      </div>
 
-              <form
-                method="post"
-                action=""
-                enctype="multipart/form-data"
-                id="create-form"
-              >
+      <div class="row g-4">
+        <!-- Main Form Column -->
+        <div class="col-lg-8">
+          <div class="card border-0 shadow-lg create-form-card">
+            <!-- Card Header with Type Selector -->
+            <div class="card-header bg-gradient-primary text-white border-0 p-4">
+              <h5 class="card-title mb-3 fw-bold">
+                <i class="fas fa-edit me-2"></i>Item Details
+              </h5>
+              
+              <!-- Type Selection Pills -->
+              <div class="type-selector">
+                <label class="d-block mb-2 small">What would you like to create?</label>
+                <select id="id_type" name="type" class="form-select form-select-lg bg-white border-0 shadow-sm">
+                  <option value="course">📚 Course</option>
+                  <option value="subject">📖 Subject</option>
+                  <option value="student">👨‍🎓 Student</option>
+                  <option value="teacher">👩‍🏫 Teacher</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="card-body p-4 p-lg-5">
+              <form method="post" action="" enctype="multipart/form-data" id="create-form" class="modern-create-form">
                 {% csrf_token %}
 
-                <div class="mb-3">
-                  <label for="id_type" class="form-label">Type</label>
-                  <select id="id_type" name="type" class="form-select">
-                    <option value="course">Course</option>
-                    <option value="subject">Subject</option>
-                    <option value="student">Student</option>
-                    <option value="teacher">Teacher</option>
-                  </select>
-                </div>
-
-                <!-- common fields -->
-                <div class="mb-3">
-                  <label for="id_name" class="form-label">Name / Title</label>
-                  <input
-                    type="text"
-                    class="form-control"
-                    id="id_name"
-                    name="name"
-                    placeholder="Enter name or title"
-                    required
-                  />
-                </div>
-
-                <div class="mb-3">
-                  <label for="id_code" class="form-label">Code / ID</label>
-                  <input
-                    type="text"
-                    class="form-control"
-                    id="id_code"
-                    name="code"
-                    placeholder="Optional code or identifier"
-                  />
-                </div>
-
-                <!-- course/subject specific -->
-                <div id="section-course" class="entity-section">
-                  <div class="mb-3">
-                    <label for="id_credits" class="form-label">Credits</label>
-                    <input
-                      type="number"
-                      class="form-control"
-                      id="id_credits"
-                      name="credits"
-                      min="0"
-                    />
-                  </div>
-                  <div class="mb-3">
-                    <label for="id_duration" class="form-label">Duration</label>
-                    <input
-                      type="text"
-                      class="form-control"
-                      id="id_duration"
-                      name="duration"
-                      placeholder="e.g. 3 months, 1 semester"
-                    />
+                <!-- Type indicator badge -->
+                <div class="selected-type-badge mb-4 p-3 rounded-3" id="type-badge">
+                  <div class="d-flex align-items-center">
+                    <div class="badge-icon me-3" id="badge-icon">📚</div>
+                    <div>
+                      <small class="text-muted d-block">Creating</small>
+                      <strong class="fs-5" id="badge-text">Course</strong>
+                    </div>
                   </div>
                 </div>
 
-                <div
-                  id="section-subject"
-                  class="entity-section"
-                  style="display: none"
-                >
+                <!-- Common Fields Section -->
+                <div class="form-section mb-4">
+                  <h6 class="section-title">
+                    <i class="fas fa-info-circle me-2"></i>Basic Information
+                  </h6>
+                  
+                  <div class="mb-4">
+                    <label for="id_name" class="form-label fw-semibold">
+                      <i class="fas fa-heading me-2 text-primary"></i>Name / Title
+                      <span class="text-danger">*</span>
+                    </label>
+                    <input type="text" class="form-control form-control-lg" id="id_name" name="name" placeholder="Enter name or title" required />
+                  </div>
+
+                  <div class="mb-4">
+                    <label for="id_code" class="form-label fw-semibold">
+                      <i class="fas fa-barcode me-2 text-primary"></i>Code / ID
+                    </label>
+                    <input type="text" class="form-control" id="id_code" name="code" placeholder="Optional identifier or code" />
+                    <div class="form-text">
+                      <i class="fas fa-lightbulb me-1"></i>Unique identifier for this item
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Course/Subject Specific Section -->
+                <div id="section-course" class="entity-section form-section mb-4">
+                  <h6 class="section-title">
+                    <i class="fas fa-graduation-cap me-2"></i>Course Details
+                  </h6>
+                  
+                  <div class="row g-3">
+                    <div class="col-md-6">
+                      <label for="id_credits" class="form-label fw-semibold">Credits</label>
+                      <input type="number" class="form-control" id="id_credits" name="credits" min="0" placeholder="0" />
+                    </div>
+                    <div class="col-md-6">
+                      <label for="id_duration" class="form-label fw-semibold">Duration</label>
+                      <input type="text" class="form-control" id="id_duration" name="duration" placeholder="e.g. 3 months, 1 semester" />
+                    </div>
+                  </div>
+                </div>
+
+                <div id="section-subject" class="entity-section form-section mb-4" style="display: none">
+                  <h6 class="section-title">
+                    <i class="fas fa-book me-2"></i>Subject Details
+                  </h6>
+                  
                   <div class="mb-3">
-                    <label for="id_course" class="form-label"
-                      >Parent Course</label
-                    >
-                    <select
-                      id="id_course"
-                      name="parent_course"
-                      class="form-select"
-                    >
-                      <option value="">-- Not linked --</option>
+                    <label for="id_course" class="form-label fw-semibold">Parent Course</label>
+                    <select id="id_course" name="parent_course" class="form-select">
+                      <option value="">-- Not linked to any course --</option>
                     </select>
                   </div>
                 </div>
 
-                <!-- student specific -->
-                <div
-                  id="section-student"
-                  class="entity-section"
-                  style="display: none"
-                >
-                  <div class="mb-3">
-                    <label for="id_enrollment" class="form-label"
-                      >Enrollment No.</label
-                    >
-                    <input
-                      type="text"
-                      class="form-control"
-                      id="id_enrollment"
-                      name="enrollment"
-                    />
-                  </div>
-                  <div class="mb-3">
-                    <label for="id_dob" class="form-label">Date of Birth</label>
-                    <input
-                      type="date"
-                      class="form-control"
-                      id="id_dob"
-                      name="dob"
-                    />
-                  </div>
-                  <div class="mb-3">
-                    <label for="id_email" class="form-label">Email</label>
-                    <input
-                      type="email"
-                      class="form-control"
-                      id="id_email"
-                      name="email"
-                    />
+                <!-- Student Specific Section -->
+                <div id="section-student" class="entity-section form-section mb-4" style="display: none">
+                  <h6 class="section-title">
+                    <i class="fas fa-user-graduate me-2"></i>Student Details
+                  </h6>
+                  
+                  <div class="row g-3">
+                    <div class="col-md-6">
+                      <label for="id_enrollment" class="form-label fw-semibold">Enrollment No.</label>
+                      <input type="text" class="form-control" id="id_enrollment" name="enrollment" placeholder="Enter enrollment number" />
+                    </div>
+                    <div class="col-md-6">
+                      <label for="id_dob" class="form-label fw-semibold">Date of Birth</label>
+                      <input type="date" class="form-control" id="id_dob" name="dob" />
+                    </div>
+                    <div class="col-12">
+                      <label for="id_email" class="form-label fw-semibold">Email Address</label>
+                      <input type="email" class="form-control" id="id_email" name="email" placeholder="student@example.com" />
+                    </div>
                   </div>
                 </div>
 
-                <!-- teacher specific -->
-                <div
-                  id="section-teacher"
-                  class="entity-section"
-                  style="display: none"
-                >
-                  <div class="mb-3">
-                    <label for="id_empid" class="form-label">Employee ID</label>
-                    <input
-                      type="text"
-                      class="form-control"
-                      id="id_empid"
-                      name="empid"
-                    />
-                  </div>
-                  <div class="mb-3">
-                    <label for="id_department" class="form-label"
-                      >Department</label
-                    >
-                    <input
-                      type="text"
-                      class="form-control"
-                      id="id_department"
-                      name="department"
-                    />
-                  </div>
-                  <div class="mb-3">
-                    <label for="id_email_t" class="form-label">Email</label>
-                    <input
-                      type="email"
-                      class="form-control"
-                      id="id_email_t"
-                      name="email_teacher"
-                    />
+                <!-- Teacher Specific Section -->
+                <div id="section-teacher" class="entity-section form-section mb-4" style="display: none">
+                  <h6 class="section-title">
+                    <i class="fas fa-chalkboard-teacher me-2"></i>Teacher Details
+                  </h6>
+                  
+                  <div class="row g-3">
+                    <div class="col-md-6">
+                      <label for="id_empid" class="form-label fw-semibold">Employee ID</label>
+                      <input type="text" class="form-control" id="id_empid" name="empid" placeholder="Enter employee ID" />
+                    </div>
+                    <div class="col-md-6">
+                      <label for="id_department" class="form-label fw-semibold">Department</label>
+                      <input type="text" class="form-control" id="id_department" name="department" placeholder="e.g. Mathematics, Science" />
+                    </div>
+                    <div class="col-12">
+                      <label for="id_email_t" class="form-label fw-semibold">Email Address</label>
+                      <input type="email" class="form-control" id="id_email_t" name="email_teacher" placeholder="teacher@example.com" />
+                    </div>
                   </div>
                 </div>
 
-                <div class="mb-3">
-                  <label for="id_description" class="form-label"
-                    >Description</label
-                  >
-                  <textarea
-                    id="id_description"
-                    name="description"
-                    class="form-control"
-                    rows="4"
-                  ></textarea>
+                <!-- Additional Information Section -->
+                <div class="form-section mb-4">
+                  <h6 class="section-title">
+                    <i class="fas fa-align-left me-2"></i>Additional Information
+                  </h6>
+                  
+                  <div class="mb-4">
+                    <label for="id_description" class="form-label fw-semibold">Description</label>
+                    <textarea id="id_description" name="description" class="form-control" rows="4" placeholder="Add a detailed description..."></textarea>
+                  </div>
+
+                  <div class="mb-3">
+                    <label for="id_image" class="form-label fw-semibold">
+                      <i class="fas fa-image me-2 text-primary"></i>Image (optional)
+                    </label>
+                    <input class="form-control" type="file" id="id_image" name="image" accept="image/*" />
+                    <div class="form-text">
+                      <i class="fas fa-info-circle me-1"></i>Recommended: Square image, at least 400x400px
+                    </div>
+                  </div>
                 </div>
 
-                <div class="mb-3">
-                  <label for="id_image" class="form-label"
-                    >Image (optional)</label
-                  >
-                  <input
-                    class="form-control"
-                    type="file"
-                    id="id_image"
-                    name="image"
-                  />
-                </div>
-
-                <div class="d-flex justify-content-end mt-3">
-                  <a href="subjects.html" class="btn btn-secondary me-2"
-                    >Cancel</a
-                  >
-                  <button
-                    type="submit"
-                    class="btn btn-primary"
-                    id="create-submit"
-                  >
-                    Create
+                <!-- Form Actions -->
+                <div class="d-flex justify-content-between align-items-center mt-5 pt-4 border-top">
+                  <a href="{% url 'dashboard:index' %}" class="btn btn-outline-secondary btn-lg px-4">
+                    <i class="fas fa-times me-2"></i>Cancel
+                  </a>
+                  <button type="submit" class="btn btn-primary btn-lg px-5 shadow-lg create-submit-btn" id="create-submit">
+                    <i class="fas fa-plus-circle me-2"></i>
+                    <span class="btn-text">Create</span>
+                    <span class="btn-spinner spinner-border spinner-border-sm ms-2 d-none" role="status"></span>
                   </button>
                 </div>
               </form>
@@ -209,75 +190,408 @@ New{% endblock %} {% block content %}
           </div>
         </div>
 
+        <!-- Sidebar Column -->
         <div class="col-lg-4">
-          <div class="card mb-4">
-            <div class="card-body">
-              <h6 class="card-title">Tips</h6>
-              <p class="small text-muted">
-                Select the type of item you want to create. The form will adapt
-                to show fields relevant to the chosen type. Server-side
-                validation should still be enforced in your view.
-              </p>
-              <hr />
-              <p class="small text-muted mb-0">
-                If you pass a Django form as the context variable
-                <code>form</code>, the template will render it automatically
-                instead of the manual fields.
-              </p>
+          <!-- Quick Tips Card -->
+          <div class="card border-0 shadow-sm mb-4 tips-card">
+            <div class="card-body p-4">
+              <div class="d-flex align-items-center mb-3">
+                <div class="tips-icon me-3">
+                  <i class="fas fa-lightbulb"></i>
+                </div>
+                <h6 class="card-title mb-0 fw-bold">Quick Tips</h6>
+              </div>
+              <ul class="tips-list">
+                <li><i class="fas fa-check-circle text-success me-2"></i>Fill all required fields marked with *</li>
+                <li><i class="fas fa-check-circle text-success me-2"></i>Use clear and descriptive names</li>
+                <li><i class="fas fa-check-circle text-success me-2"></i>Add detailed descriptions for clarity</li>
+                <li><i class="fas fa-check-circle text-success me-2"></i>Upload high-quality images</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Preview Card -->
+          <div class="card border-0 shadow-sm preview-card">
+            <div class="card-body p-4">
+              <div class="d-flex align-items-center mb-3">
+                <div class="preview-icon me-3">
+                  <i class="fas fa-eye"></i>
+                </div>
+                <h6 class="card-title mb-0 fw-bold">Live Preview</h6>
+              </div>
+              <div class="preview-content">
+                <div class="preview-badge mb-2" id="preview-type">Course</div>
+                <h5 class="preview-title mb-2" id="preview-name">Your item name will appear here</h5>
+                <p class="preview-description text-muted small" id="preview-desc">Description will appear here...</p>
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
-    <!--//container-xl-->
   </div>
-  <!--//app-content-->
 </div>
-<!--//app-wrapper-->
-{% endblock %} {% block extra_scripts %}
+
+<style>
+/* Create New Page Header */
+.create-new-header .icon-wrapper {
+  width: 80px;
+  height: 80px;
+  background: linear-gradient(135deg, #15a362, #1bc87a);
+  border-radius: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40px;
+  color: white;
+  box-shadow: 0 8px 24px rgba(21, 163, 98, 0.3);
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+/* Card Styling */
+.create-form-card {
+  animation: slideInUp 0.6s ease-out;
+  border-radius: 16px !important;
+  overflow: hidden;
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.bg-gradient-primary {
+  background: linear-gradient(135deg, #15a362 0%, #1bc87a 100%) !important;
+}
+
+/* Type Selector */
+.type-selector .form-select {
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.type-selector .form-select:focus {
+  transform: scale(1.02);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Selected Type Badge */
+.selected-type-badge {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border: 2px dashed #15a362;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+}
+
+.badge-icon {
+  font-size: 48px;
+  animation: bounce 2s ease-in-out infinite;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+/* Form Sections */
+.form-section {
+  animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.section-title {
+  color: #2d3748;
+  font-weight: 700;
+  padding-bottom: 12px;
+  margin-bottom: 20px;
+  border-bottom: 2px solid #e2e8f0;
+  position: relative;
+}
+
+.section-title::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 60px;
+  height: 2px;
+  background: linear-gradient(90deg, #15a362, #1bc87a);
+}
+
+/* Form Controls */
+.modern-create-form .form-control,
+.modern-create-form .form-select {
+  border: 2px solid #e9ecef;
+  border-radius: 10px;
+  padding: 10px 16px;
+  transition: all 0.3s ease;
+}
+
+.modern-create-form .form-control:focus,
+.modern-create-form .form-select:focus {
+  border-color: #15a362;
+  box-shadow: 0 0 0 4px rgba(21, 163, 98, 0.1);
+  transform: translateY(-2px);
+}
+
+/* Submit Button */
+.create-submit-btn {
+  background: linear-gradient(135deg, #15a362, #1bc87a);
+  border: none;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.create-submit-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 30px rgba(21, 163, 98, 0.4) !important;
+}
+
+.create-submit-btn::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.create-submit-btn:hover::before {
+  width: 300px;
+  height: 300px;
+}
+
+/* Tips Card */
+.tips-card {
+  border-left: 4px solid #15a362 !important;
+  animation: slideInRight 0.7s ease-out;
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.tips-icon {
+  width: 50px;
+  height: 50px;
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  color: #f59e0b;
+}
+
+.tips-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.tips-list li {
+  padding: 8px 0;
+  color: #64748b;
+  font-size: 14px;
+}
+
+/* Preview Card */
+.preview-card {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  animation: slideInRight 0.8s ease-out;
+}
+
+.preview-icon {
+  width: 50px;
+  height: 50px;
+  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  color: #3b82f6;
+}
+
+.preview-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  background: linear-gradient(135deg, #15a362, #1bc87a);
+  color: white;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.preview-title {
+  color: #1e293b;
+  font-weight: 700;
+}
+
+.preview-description {
+  line-height: 1.6;
+}
+
+/* Entity Section Transitions */
+.entity-section {
+  transition: all 0.3s ease;
+}
+
+/* File Input */
+input[type="file"] {
+  cursor: pointer;
+}
+
+input[type="file"]::-webkit-file-upload-button {
+  background: linear-gradient(135deg, #15a362, #1bc87a);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-right: 12px;
+  transition: all 0.3s ease;
+}
+
+input[type="file"]::-webkit-file-upload-button:hover {
+  transform: scale(1.05);
+}
+</style>
+
+{% endblock %}
+
+{% block extra_scripts %}
 <script>
-  document.addEventListener("DOMContentLoaded", function () {
-    var typeSelect = document.getElementById("id_type");
-    var sections = {
-      course: document.getElementById("section-course"),
-      subject: document.getElementById("section-subject"),
-      student: document.getElementById("section-student"),
-      teacher: document.getElementById("section-teacher"),
-    };
+document.addEventListener("DOMContentLoaded", function () {
+  const typeSelect = document.getElementById("id_type");
+  const sections = {
+    course: document.getElementById("section-course"),
+    subject: document.getElementById("section-subject"),
+    student: document.getElementById("section-student"),
+    teacher: document.getElementById("section-teacher"),
+  };
 
-    function showSection(type) {
-      Object.keys(sections).forEach(function (k) {
-        var el = sections[k];
-        if (!el) return;
-        if (k === type) el.style.display = "";
-        else el.style.display = "none";
-      });
-    }
+  const typeIcons = {
+    course: '📚',
+    subject: '📖',
+    student: '👨‍🎓',
+    teacher: '👩‍🏫'
+  };
 
-    if (typeSelect) {
-      typeSelect.addEventListener("change", function (e) {
-        showSection(e.target.value);
-      });
-      // show initial
-      showSection(typeSelect.value);
-    }
+  const typeNames = {
+    course: 'Course',
+    subject: 'Subject',
+    student: 'Student',
+    teacher: 'Teacher'
+  };
 
-    // basic submit guard
-    var form = document.getElementById("create-form");
-    var submit = document.getElementById("create-submit");
-    if (form && submit) {
-      form.addEventListener("submit", function (e) {
-        var name = document.getElementById("id_name");
-        if (name && name.value.trim() === "") {
-          e.preventDefault();
-          name.classList.add("is-invalid");
-          name.focus();
-          return false;
-        }
-        submit.disabled = true;
-        submit.innerText = "Creating...";
-      });
-    }
-  });
+  function showSection(type) {
+    // Update badge
+    document.getElementById('badge-icon').textContent = typeIcons[type];
+    document.getElementById('badge-text').textContent = typeNames[type];
+    document.getElementById('preview-type').textContent = typeNames[type];
+    
+    // Show/hide sections
+    Object.keys(sections).forEach(function (k) {
+      const el = sections[k];
+      if (!el) return;
+      if (k === type) {
+        el.style.display = "";
+        el.style.animation = "fadeIn 0.5s ease-out";
+      } else {
+        el.style.display = "none";
+      }
+    });
+  }
+
+  if (typeSelect) {
+    typeSelect.addEventListener("change", function (e) {
+      showSection(e.target.value);
+    });
+    showSection(typeSelect.value);
+  }
+
+  // Live preview
+  const nameInput = document.getElementById("id_name");
+  const descInput = document.getElementById("id_description");
+  
+  if (nameInput) {
+    nameInput.addEventListener("input", function(e) {
+      const previewName = document.getElementById("preview-name");
+      previewName.textContent = e.target.value || "Your item name will appear here";
+    });
+  }
+  
+  if (descInput) {
+    descInput.addEventListener("input", function(e) {
+      const previewDesc = document.getElementById("preview-desc");
+      previewDesc.textContent = e.target.value || "Description will appear here...";
+    });
+  }
+
+  // Form submit handling
+  const form = document.getElementById("create-form");
+  const submit = document.getElementById("create-submit");
+  const btnText = submit.querySelector('.btn-text');
+  const btnSpinner = submit.querySelector('.btn-spinner');
+  
+  if (form && submit) {
+    form.addEventListener("submit", function (e) {
+      const name = document.getElementById("id_name");
+      if (name && name.value.trim() === "") {
+        e.preventDefault();
+        name.classList.add("is-invalid");
+        name.focus();
+        
+        // Show error message
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'alert alert-danger mt-3';
+        errorDiv.innerHTML = '<i class="fas fa-exclamation-circle me-2"></i>Please enter a name/title';
+        name.parentElement.appendChild(errorDiv);
+        
+        setTimeout(() => errorDiv.remove(), 3000);
+        return false;
+      }
+      
+      submit.disabled = true;
+      btnText.textContent = "Creating...";
+      btnSpinner.classList.remove('d-none');
+    });
+  }
+});
 </script>
 {% endblock %}

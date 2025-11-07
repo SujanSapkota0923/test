@@ -26,11 +26,6 @@ urlpatterns = [
 
 
 
-# this path is for testing purposes 
-    path('create-new/', views.create_new_view, name='create_new'),
-
-
-
 
 
 # for CRUD operations of models

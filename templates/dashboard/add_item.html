@@ -6,97 +6,384 @@
     <div class="app-content pt-3 p-md-3 p-lg-4">
         <div class="container-xl">
             
-            <!-- Header -->
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1 class="app-page-title mb-0">Add New {{ item_name }}</h1>
-                <a class="btn app-btn-secondary text-nowrap" href="javascript:history.back()">
-                    <svg width="1em" height="1em" fill="currentColor" class="bi bi-arrow-left me-2" viewBox="0 0 16 16">
-                        <path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z"/>
-                    </svg>
-                    Back to List
-                </a>
+            <!-- Enhanced Header with Gradient Background -->
+            <div class="add-item-header mb-4 p-4 rounded-3 position-relative overflow-hidden">
+                <div class="position-absolute top-0 start-0 w-100 h-100 add-item-header-bg"></div>
+                <div class="position-relative d-flex justify-content-between align-items-center">
+                    <div>
+                        <h1 class="text-white mb-2 fw-bold">
+                            <i class="fas fa-plus-circle me-2"></i>Add New {{ item_name }}
+                        </h1>
+                        <p class="text-white-50 mb-0 small">Fill in the details below to create a new {{ item_name|lower }}</p>
+                    </div>
+                    <a class="btn btn-light shadow-sm text-nowrap" href="javascript:history.back()">
+                        <i class="fas fa-arrow-left me-2"></i>
+                        Back
+                    </a>
+                </div>
             </div>
 
-            <!-- Form Card -->
+            <!-- Form Card with Enhanced Design -->
             <div class="row">
                 <div class="col-12 col-lg-10 col-xl-8 mx-auto">
-                    <div class="app-card app-card-settings shadow-sm mb-4">
-                        <div class="app-card-header p-3">
-                            <h4 class="app-card-title mb-0">{{ item_name }} Information</h4>
-                        </div>
-                        <div class="app-card-body p-4">
+                    <div class="add-item-form-card mb-4 position-relative">
+                        <!-- Progress Steps Indicator -->
+                        <div class="form-progress-bar"></div>
+                        
+                        <div class="card border-0 shadow-lg">
+                            <div class="card-header bg-gradient-primary text-white p-4 border-0">
+                                <div class="d-flex align-items-center">
+                                    <div class="icon-box me-3">
+                                        <i class="fas fa-file-alt"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="mb-0 fw-bold">{{ item_name }} Information</h4>
+                                        <small class="opacity-75">Please provide accurate information</small>
+                                    </div>
+                                </div>
+                            </div>
                             
-                            {% if messages %}
-                                {% for message in messages %}
-                                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                                        {{ message }}
-                                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                                    </div>
-                                {% endfor %}
-                            {% endif %}
-
-                            <form method="POST" enctype="multipart/form-data" novalidate>
-                                {% csrf_token %}
+                            <div class="card-body p-4 p-lg-5">
                                 
-                                {% for field in form %}
-                                    <div class="mb-3">
-                                        <label for="{{ field.id_for_label }}" class="form-label">
-                                            {{ field.label }}
-                                            {% if field.field.required %}
-                                                <span class="text-danger">*</span>
-                                            {% endif %}
-                                        </label>
-                                        
-                                        {% if field.field.widget.input_type == 'checkbox' %}
-                                            <div class="form-check">
-                                                {{ field }}
-                                                <label class="form-check-label" for="{{ field.id_for_label }}">
-                                                    {{ field.help_text }}
-                                                </label>
+                                {% if messages %}
+                                    {% for message in messages %}
+                                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show alert-modern" role="alert">
+                                            <div class="d-flex align-items-center">
+                                                {% if message.tags == 'success' %}
+                                                    <i class="fas fa-check-circle me-3 fs-4"></i>
+                                                {% elif message.tags == 'error' %}
+                                                    <i class="fas fa-exclamation-circle me-3 fs-4"></i>
+                                                {% elif message.tags == 'warning' %}
+                                                    <i class="fas fa-exclamation-triangle me-3 fs-4"></i>
+                                                {% else %}
+                                                    <i class="fas fa-info-circle me-3 fs-4"></i>
+                                                {% endif %}
+                                                <div class="flex-grow-1">{{ message }}</div>
                                             </div>
-                                        {% else %}
-                                            {{ field }}
-                                            {% if field.help_text %}
-                                                <div class="form-text">{{ field.help_text }}</div>
-                                            {% endif %}
-                                        {% endif %}
-                                        
-                                        {% if field.errors %}
-                                            <div class="invalid-feedback d-block">
-                                                {% for error in field.errors %}
-                                                    {{ error }}
-                                                {% endfor %}
-                                            </div>
-                                        {% endif %}
-                                    </div>
-                                {% endfor %}
-
-                                {% if form.non_field_errors %}
-                                    <div class="alert alert-danger" role="alert">
-                                        {% for error in form.non_field_errors %}
-                                            {{ error }}
-                                        {% endfor %}
-                                    </div>
+                                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                        </div>
+                                    {% endfor %}
                                 {% endif %}
 
-                                <div class="d-flex justify-content-between mt-4">
-                                    <a href="javascript:history.back()" class="btn app-btn-secondary">Cancel</a>
-                                    <button type="submit" class="btn app-btn-primary">
-                                        <svg width="1em" height="1em" fill="currentColor" class="bi bi-check-lg me-2" viewBox="0 0 16 16">
-                                            <path d="M12.736 3.97a.733.733 0 0 1 1.047 0c.286.289.29.756.01 1.05L7.88 12.01a.733.733 0 0 1-1.065.02L3.217 8.384a.757.757 0 0 1 0-1.06.733.733 0 0 1 1.047 0l3.052 3.093 5.4-6.425a.247.247 0 0 1 .02-.022Z"/>
-                                        </svg>
-                                        Save {{ item_name }}
-                                    </button>
-                                </div>
-                            </form>
-                        </div><!--//app-card-body-->
-                    </div><!--//app-card-->
-                </div><!--//col-->
-            </div><!--//row-->
+                                <form method="POST" enctype="multipart/form-data" novalidate class="modern-form">
+                                    {% csrf_token %}
+                                    
+                                    {% for field in form %}
+                                        <div class="mb-4 form-field-wrapper">
+                                            <label for="{{ field.id_for_label }}" class="form-label fw-semibold">
+                                                <i class="fas fa-tag me-2 text-primary"></i>
+                                                {{ field.label }}
+                                                {% if field.field.required %}
+                                                    <span class="text-danger ms-1">*</span>
+                                                {% endif %}
+                                            </label>
+                                            
+                                            {% if field.field.widget.input_type == 'checkbox' %}
+                                                <div class="form-check form-switch form-check-modern">
+                                                    {{ field }}
+                                                    <label class="form-check-label" for="{{ field.id_for_label }}">
+                                                        {{ field.help_text }}
+                                                    </label>
+                                                </div>
+                                            {% else %}
+                                                <div class="input-group-modern">
+                                                    {{ field }}
+                                                </div>
+                                                {% if field.help_text %}
+                                                    <div class="form-text text-muted">
+                                                        <i class="fas fa-info-circle me-1"></i>{{ field.help_text }}
+                                                    </div>
+                                                {% endif %}
+                                            {% endif %}
+                                            
+                                            {% if field.errors %}
+                                                <div class="invalid-feedback d-block mt-2">
+                                                    <i class="fas fa-exclamation-circle me-1"></i>
+                                                    {% for error in field.errors %}
+                                                        {{ error }}
+                                                    {% endfor %}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    {% endfor %}
 
-        </div><!--//container-xl-->
-    </div><!--//app-content-->
-</div><!--//app-wrapper-->
+                                    {% if form.non_field_errors %}
+                                        <div class="alert alert-danger alert-modern" role="alert">
+                                            <i class="fas fa-exclamation-triangle me-2"></i>
+                                            {% for error in form.non_field_errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+
+                                    <div class="form-actions d-flex justify-content-between align-items-center mt-5 pt-4 border-top">
+                                        <a href="javascript:history.back()" class="btn btn-outline-secondary btn-lg px-4">
+                                            <i class="fas fa-times me-2"></i>Cancel
+                                        </a>
+                                        <button type="submit" class="btn btn-primary btn-lg px-5 shadow-lg submit-btn">
+                                            <i class="fas fa-save me-2"></i>
+                                            <span class="btn-text">Save {{ item_name }}</span>
+                                            <span class="btn-spinner spinner-border spinner-border-sm ms-2 d-none" role="status"></span>
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                        
+                        <!-- Decorative Elements -->
+                        <div class="form-decoration form-decoration-1"></div>
+                        <div class="form-decoration form-decoration-2"></div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<style>
+/* Enhanced Add Item Header */
+.add-item-header {
+    background: linear-gradient(135deg, #15a362 0%, #1bc87a 100%);
+    box-shadow: 0 8px 24px rgba(21, 163, 98, 0.2);
+}
+
+.add-item-header-bg {
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    opacity: 0.3;
+}
+
+/* Icon Box in Header */
+.icon-box {
+    width: 60px;
+    height: 60px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    backdrop-filter: blur(10px);
+}
+
+/* Card Gradient Header */
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #15a362 0%, #1bc87a 100%) !important;
+}
+
+/* Modern Form Styling */
+.modern-form .form-control,
+.modern-form .form-select {
+    border: 2px solid #e9ecef;
+    border-radius: 10px;
+    padding: 12px 16px;
+    transition: all 0.3s ease;
+    font-size: 15px;
+}
+
+.modern-form .form-control:focus,
+.modern-form .form-select:focus {
+    border-color: #15a362;
+    box-shadow: 0 0 0 4px rgba(21, 163, 98, 0.1);
+    transform: translateY(-2px);
+}
+
+.modern-form textarea.form-control {
+    min-height: 120px;
+}
+
+/* Form Field Wrapper Animation */
+.form-field-wrapper {
+    animation: slideInUp 0.5s ease-out;
+}
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Modern Form Check */
+.form-check-modern .form-check-input {
+    width: 48px;
+    height: 24px;
+    border-radius: 12px;
+    cursor: pointer;
+}
+
+.form-check-modern .form-check-input:checked {
+    background-color: #15a362;
+    border-color: #15a362;
+}
+
+/* Modern Alert */
+.alert-modern {
+    border: none;
+    border-radius: 12px;
+    padding: 16px 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    border-left: 4px solid currentColor;
+}
+
+/* Submit Button Enhancement */
+.submit-btn {
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    background: linear-gradient(135deg, #15a362 0%, #1bc87a 100%);
+    border: none;
+}
+
+.submit-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(21, 163, 98, 0.4) !important;
+}
+
+.submit-btn:active {
+    transform: translateY(-1px);
+}
+
+.submit-btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+.submit-btn:hover::before {
+    width: 300px;
+    height: 300px;
+}
+
+/* Form Decorations */
+.form-decoration {
+    position: absolute;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #15a362, #1bc87a);
+    opacity: 0.05;
+    pointer-events: none;
+}
+
+.form-decoration-1 {
+    width: 200px;
+    height: 200px;
+    top: -50px;
+    right: -50px;
+}
+
+.form-decoration-2 {
+    width: 150px;
+    height: 150px;
+    bottom: -30px;
+    left: -30px;
+}
+
+/* Progress Bar */
+.form-progress-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #15a362, #1bc87a);
+    border-radius: 4px 4px 0 0;
+    width: 100%;
+    transform: scaleX(0);
+    transform-origin: left;
+    animation: progressLoad 1s ease-out forwards;
+}
+
+@keyframes progressLoad {
+    to {
+        transform: scaleX(1);
+    }
+}
+
+/* File Input Styling */
+.form-control[type="file"] {
+    padding: 10px;
+    cursor: pointer;
+}
+
+.form-control[type="file"]::-webkit-file-upload-button {
+    background: linear-gradient(135deg, #15a362, #1bc87a);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-right: 12px;
+    transition: all 0.3s ease;
+}
+
+.form-control[type="file"]::-webkit-file-upload-button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(21, 163, 98, 0.3);
+}
+
+/* Form Label Enhancement */
+.form-label {
+    color: #2d3748;
+    font-size: 14px;
+    margin-bottom: 8px;
+    letter-spacing: 0.3px;
+}
+
+/* Required Field Indicator */
+.text-danger {
+    font-weight: bold;
+}
+
+/* Card Shadow */
+.shadow-lg {
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1) !important;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('.modern-form');
+    const submitBtn = document.querySelector('.submit-btn');
+    const btnText = submitBtn.querySelector('.btn-text');
+    const btnSpinner = submitBtn.querySelector('.btn-spinner');
+    
+    // Add loading state on submit
+    form.addEventListener('submit', function() {
+        submitBtn.disabled = true;
+        btnText.textContent = 'Saving...';
+        btnSpinner.classList.remove('d-none');
+    });
+    
+    // Add animation to form fields
+    const fields = document.querySelectorAll('.form-field-wrapper');
+    fields.forEach((field, index) => {
+        field.style.animationDelay = `${index * 0.1}s`;
+    });
+    
+    // Floating label effect for inputs
+    const inputs = document.querySelectorAll('.form-control, .form-select');
+    inputs.forEach(input => {
+        input.addEventListener('focus', function() {
+            this.parentElement.classList.add('focused');
+        });
+        input.addEventListener('blur', function() {
+            if (!this.value) {
+                this.parentElement.classList.remove('focused');
+            }
+        });
+    });
+});
+</script>
 {% endblock %}
 
 {% block extra_scripts %}

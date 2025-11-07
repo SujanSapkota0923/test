@@ -12,7 +12,7 @@ class User(AbstractUser):
         ADMIN = "admin", "Admin"
         TEACHER = "teacher", "Teacher"
         STUDENT = "student", "Student"
-    role = models.CharField(max_length=10, choices=Role.choices, default=Role.STUDENT)
+    role = models.CharField(max_length=10, choices=Role.choices)
     phone = models.CharField(max_length=20, blank=True, null=True)
     bio = models.TextField(blank=True) # this will be added after profile is created
     profile_picture = models.ImageField(upload_to='profile_pictures/', blank=True, null=True)
@@ -24,8 +24,18 @@ class User(AbstractUser):
         related_name='students'
     )
     def save(self, *args, **kwargs):
-        if self.role == self.Role.ADMIN:
+        if self.is_superuser and not self.role:
+            self.role = self.Role.ADMIN
+
+        if not self.role:
+            self.role = self.Role.STUDENT
+
+        if self.role == self.Role.ADMIN or self.is_superuser:
             self.is_staff = True
+
+        elif self.role in [self.Role.TEACHER, self.Role.STUDENT]:
+            self.is_staff = False
+            self.is_superuser = False
         super().save(*args, **kwargs)
 
     def clean(self):
@@ -38,14 +48,13 @@ class User(AbstractUser):
     @property
     def is_teacher(self):
         return self.role == self.Role.TEACHER
-
     @property
     def is_student(self):
         return self.role == self.Role.STUDENT
     @property
     def is_admin(self):
         return self.role == self.Role.ADMIN
-
+        
     # if user is student then only return name with student
     def __str__(self):
         if self.is_student:
@@ -62,6 +71,12 @@ class User(AbstractUser):
             # Should not happen with validation, but handle it
             return self.enrollments.filter(is_active=True).first()
         
+
+
+
+ ###############################
+ # academic level refers to classes
+ ################################       
 class AcademicLevel(models.Model): # for representing grades/years 1 for class one and 2 for class two
     name = models.CharField(max_length=50, unique=True)
     slug = models.SlugField(max_length=50, unique=True) # for URL use like 'grade-10', 'bachelor', etc. for easy referencing
@@ -86,6 +101,9 @@ class AcademicLevel(models.Model): # for representing grades/years 1 for class o
         return self.name
 
 
+ ###############################
+ # academic level refers to sub-divisions like classes like science, management etc.
+ ################################    
 class Stream(models.Model):
     """
     Optional division inside some AcademicLevels (e.g. +2 Science, +2 Management).
@@ -109,7 +127,7 @@ class Stream(models.Model):
 class Subject(models.Model):
     name = models.CharField(max_length=200)
     description = models.TextField(blank=True)
-    levels = models.ForeignKey(AcademicLevel, related_name="subjects", on_delete=models.CASCADE, blank=True, null=True)
+    levels = models.ForeignKey(AcademicLevel, related_name="subjects", on_delete=models.SET_NULL, blank=True, null=True)
     streams = models.ManyToManyField(Stream, related_name="subjects", default=None, blank=True)
 
     def unique_together(self):
