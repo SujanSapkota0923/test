@@ -142,7 +142,9 @@ class Subject(models.Model):
 
 class Enrollment(models.Model):
     student = models.ForeignKey(settings.AUTH_USER_MODEL, related_name="enrollments", on_delete=models.CASCADE, limit_choices_to={"role": User.Role.STUDENT})
-    level = models.ForeignKey(AcademicLevel, related_name="enrollments", on_delete=models.CASCADE)
+    level = models.ForeignKey(AcademicLevel, related_name="enrollments", on_delete=models.CASCADE, blank=True, null=True)
+    # Optional: enrollment can be tied to a Course instead of (or in addition to) a level
+    course = models.ForeignKey('Course', related_name='enrollments', on_delete=models.CASCADE, blank=True, null=True)
     joined_at = models.DateTimeField(default=timezone.now)
     left_at = models.DateTimeField(blank=True, null=True)
     is_active = models.BooleanField(default=False)  # if false, student unenrolled/left
@@ -156,60 +158,86 @@ class Enrollment(models.Model):
     # stop enrolling if the capacity of the level is full and update is_active to false and update the level
     def clean(self):
         super().clean()
-        
-        # Check if student already has an active enrollment
+        # Must be associated with at least a level or a course
+        if not self.level and not self.course:
+            raise ValidationError("Enrollment must have either a level or a course.")
+
+        # If activating enrollment, enforce scope-specific uniqueness and capacity rules
         if self.is_active:
-            existing_active = Enrollment.objects.filter(
-                student=self.student,
-                is_active=True
-            ).exclude(pk=self.pk)
-            
-            if existing_active.exists():
-                raise ValidationError(
-                    f"{self.student.username} is already enrolled in {existing_active.first().level.name}. "
-                    "Please deactivate the current enrollment first."
-                )
-        
-        # Check capacity (exclude current enrollment if updating)
-        if self.level.capacity is not None and self.is_active:
-            active_enrollments = Enrollment.objects.filter(
-                level=self.level, 
-                is_active=True
-            ).exclude(pk=self.pk).count()
-            
-            if active_enrollments >= self.level.capacity:
-                raise ValidationError(
-                    f"The level {self.level.name} has reached its capacity of {self.level.capacity} students."
-                )
+            # If this enrollment is level-based, ensure the student has no other active level enrollment
+            if self.level:
+                existing_active_level = Enrollment.objects.filter(
+                    student=self.student,
+                    is_active=True,
+                    level__isnull=False,
+                ).exclude(pk=self.pk)
+                if existing_active_level.exists():
+                    raise ValidationError(
+                        f"{self.student.username} is already enrolled in {existing_active_level.first().level.name}. Please deactivate the current enrollment first."
+                    )
+
+                # Check capacity for level (exclude current enrollment if updating)
+                if self.level.capacity is not None:
+                    active_enrollments = Enrollment.objects.filter(
+                        level=self.level,
+                        is_active=True,
+                    ).exclude(pk=self.pk).count()
+                    if active_enrollments >= self.level.capacity:
+                        raise ValidationError(
+                            f"The level {self.level.name} has reached its capacity of {self.level.capacity} students."
+                        )
+
+            # If this enrollment is course-based, allow multiple active enrollments across different courses,
+            # but prevent duplicate active enrollment for the same course.
+            if self.course:
+                if Enrollment.objects.filter(student=self.student, is_active=True, course=self.course).exclude(pk=self.pk).exists():
+                    raise ValidationError(f"{self.student.username} is already enrolled in course {self.course.title}.")
 
     def save(self, *args, **kwargs):
         # Run clean validation
         self.full_clean()
-        
-        # Update student's academic_level when enrollment is active
-        if self.is_active:
+
+        # Update student's academic_level when level-based enrollment is active
+        if self.is_active and self.level:
             self.student.academic_level = self.level
             self.student.save(update_fields=['academic_level'])
-        
-        # If deactivating enrollment, set left_at timestamp
-        if not self.is_active and self.left_at is None:
-            self.left_at = timezone.now()
-        
+
+        # Sync course participants when course-based enrollment changes
+        # We save the instance first so that m2m operations have a saved instance to reference
         super().save(*args, **kwargs)
 
+        try:
+            if self.course:
+                if self.is_active:
+                    # add student to course participants
+                    try:
+                        self.course.participants.add(self.student)
+                    except Exception:
+                        pass
+                else:
+                    # remove student from course participants when enrollment deactivated
+                    try:
+                        self.course.participants.remove(self.student)
+                    except Exception:
+                        pass
+        except Exception:
+            # ignore any sync errors
+            pass
 
-# extracurricular activities refers to courses like webdev , cybersecurity , etc.
+        # If deactivating enrollment, set left_at timestamp if not already set
+        if not self.is_active and self.left_at is None:
+            self.left_at = timezone.now()
+            super().save(update_fields=['left_at'])
 
-class ExtraCurricularActivity(models.Model):
+
+# Courses (previously called ExtraCurricularActivity)
+class Course(models.Model):
     '''
-    Represents an extra-curricular activity or event.
-    like all the sports activities, arts, debate club, or 
-    extra stuff tought in schools/colleges like 
-    coding, politics, and other informational etc.
+    Represents a course or extra-curricular activity (renamed from ExtraCurricularActivity).
     '''
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
-    participants = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name="extracurricular_activities", blank=True)
+    participants = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name="courses", blank=True)
     cost = models.DecimalField(max_digits=8, decimal_places=2, default=0, help_text="Cost to participate in the activity (0 for free)")
     start_time = models.DateTimeField()
     end_time = models.DateTimeField()
@@ -218,6 +246,8 @@ class ExtraCurricularActivity(models.Model):
 
     class Meta:
         ordering = ("-start_time",)
+        # Keep the original DB table name so migrations and existing DB remain valid
+        db_table = 'Course_extracurricularactivity'
 
     def clean(self):
         # Check if both start_time and end_time are provided before comparing
@@ -241,7 +271,7 @@ class LiveClass(models.Model):
     - is_recorded: whether the session is recorded and where it can be found (optional)
     """
     title = models.CharField(max_length=200)
-    course = models.ForeignKey(ExtraCurricularActivity, related_name="live_classes", on_delete=models.CASCADE, blank=True, null=True)
+    course = models.ForeignKey(Course, related_name="live_classes", on_delete=models.CASCADE, blank=True, null=True)
     level = models.ForeignKey(AcademicLevel, related_name="live_classes", on_delete=models.CASCADE, blank=True, null=True) # class level
     subject = models.ForeignKey(Subject, related_name="live_classes", on_delete=models.SET_NULL, null=True, blank=True)
     hosts = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="hosted_live_classes", limit_choices_to={"role": User.Role.TEACHER}, blank=True, null=True, help_text="Teachers hosting this live class")
@@ -289,14 +319,13 @@ class Video(models.Model):
     description = models.TextField(blank=True)
     url = models.URLField(max_length=500, help_text="Link to the video (YouTube/Vimeo/...)", unique=True)
     level = models.ForeignKey(AcademicLevel, related_name="videos", on_delete=models.CASCADE, blank=True, null=True)
-    course = models.ForeignKey(ExtraCurricularActivity, related_name="videos", on_delete=models.SET_NULL, null=True, blank=True)
+    course = models.ForeignKey(Course, related_name="videos", on_delete=models.SET_NULL, null=True, blank=True)
     subject = models.ForeignKey(Subject, related_name="videos", on_delete=models.SET_NULL, null=True, blank=True)
     stream = models.ManyToManyField(Stream, related_name="videos", blank=True)
     teacher = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="uploaded_videos", limit_choices_to={"role": User.Role.TEACHER}, blank=True, null=True, help_text="Must be a teacher")
     cost = models.DecimalField(max_digits=8, decimal_places=2, default=0, help_text="Cost to access the video (0.00 for free)")
     uploaded_at = models.DateTimeField(auto_now_add=True)
     image = models.ImageField(upload_to='video_thumbnails/', blank=True, null=True)
-    course = models.ForeignKey(ExtraCurricularActivity, related_name='videos', on_delete=models.CASCADE, blank=True, null=True)
 
 
     # if the cost is negative, raise validation error

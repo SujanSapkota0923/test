@@ -5,9 +5,9 @@ from django.shortcuts import render
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from .models import User, AcademicLevel, Stream, Subject, Enrollment, LiveClass, ExtraCurricularActivity
+from .models import User, AcademicLevel, Stream, Subject, Enrollment, LiveClass, Course
 from .forms import (UserForm, AcademicLevelForm, StreamForm, SubjectForm, 
-                    EnrollmentForm, LiveClassForm, ExtraCurricularActivityForm, VideoUploadForm)
+                    EnrollmentForm, LiveClassForm, CourseForm, VideoUploadForm)
 
 
 # Generic Add View
@@ -36,14 +36,14 @@ def add_academic_level(request):
         form = AcademicLevelForm(request.POST)
         if form.is_valid():
             form.save()
-            messages.success(request, 'Academic Level added successfully!')
+            messages.success(request, 'Class added successfully!')
             return redirect('dashboard:index')
     else:
         form = AcademicLevelForm()
     
     context = {
         'form': form,
-        'item_name': 'Academic Level',
+        'item_name': 'Class',
         'back_url': 'academic_level_list',
     }
     return render(request, 'dashboard/add_item.html', context)
@@ -93,16 +93,34 @@ def add_subject(request):
 def add_enrollment(request):
     if request.method == 'POST':
         form = EnrollmentForm(request.POST)
+        # if a course is selected, exclude students already active in that course
+        course_id = request.POST.get('course')
+        if course_id:
+            enrolled_student_ids = Enrollment.objects.filter(course_id=course_id, is_active=True).values_list('student_id', flat=True)
+            form.fields['student'].queryset = User.objects.filter(role=User.Role.STUDENT).exclude(id__in=enrolled_student_ids)
+
         if form.is_valid():
-            student = form.save()
-            messages.success(request, f'Academic level assigned to {student.username} successfully!')
+            try:
+                enrollment = form.save()
+            except Exception as exc:
+                # Model validation (capacity/duplicate) bubbled up; show friendly error
+                from django.core.exceptions import ValidationError
+                if isinstance(exc, ValidationError):
+                    form.add_error(None, exc.message_dict if hasattr(exc, 'message_dict') else exc.messages)
+                    messages.error(request, f"Could not create enrollment: {exc}")
+                else:
+                    messages.error(request, f"Could not create enrollment: {exc}")
+                return render(request, 'dashboard/add_item.html', {'form': form, 'item_name': 'Student Class', 'back_url': 'enrollment_list'})
+
+            student = enrollment.student
+            messages.success(request, f'Enrollment created for {student.username} successfully!')
             return redirect('dashboard:enrollment_home')
     else:
         form = EnrollmentForm()
     
     context = {
         'form': form,
-        'item_name': 'Student Academic Level',
+        'item_name': 'Student Class',
         'back_url': 'enrollment_list',
     }
     return render(request, 'dashboard/add_item.html', context)
@@ -130,13 +148,13 @@ def add_live_class(request):
 @login_required
 def add_activity(request):
     if request.method == 'POST':
-        form = ExtraCurricularActivityForm(request.POST)
+        form = CourseForm(request.POST)
         if form.is_valid():
             form.save()
             messages.success(request, 'Activity added successfully!')
             return redirect('dashboard:course_home')
     else:
-        form = ExtraCurricularActivityForm()
+        form = CourseForm()
     
     context = {
         'form': form,

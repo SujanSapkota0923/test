@@ -27,7 +27,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from .models import (
     User, AcademicLevel, Stream, Subject, 
-    Enrollment, LiveClass, ExtraCurricularActivity, Video
+    Enrollment, LiveClass, Course, Video
 )
 
 @admin.register(User)
@@ -76,8 +76,8 @@ class LiveClassAdmin(admin.ModelAdmin):
     date_hierarchy = 'start_time'
     readonly_fields = ['created_at']
 
-@admin.register(ExtraCurricularActivity)
-class ExtraCurricularActivityAdmin(admin.ModelAdmin):
+@admin.register(Course)
+class CourseAdmin(admin.ModelAdmin):
     list_display = ['title', 'start_time', 'end_time', 'created_at']
     list_filter = ['start_time']
     search_fields = ['title', 'description']

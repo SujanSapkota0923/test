@@ -1,6 +1,6 @@
 
 from django import forms
-from .models import User, AcademicLevel, Stream, Subject, Enrollment, LiveClass, ExtraCurricularActivity, Video
+from .models import User, AcademicLevel, Stream, Subject, Enrollment, LiveClass, Course, Video
 
 class UserForm(forms.ModelForm):
     password = forms.CharField(widget=forms.PasswordInput(attrs={
@@ -88,31 +88,39 @@ class SubjectForm(forms.ModelForm):
 
 
 class EnrollmentForm(forms.Form):
-    """Form to assign academic level to a student (updates User.academic_level)"""
+    """Form to enroll a student into a Course (level optional)"""
     student = forms.ModelChoiceField(
-        queryset=User.objects.filter(role=User.Role.STUDENT, academic_level__isnull=True),
+        queryset=User.objects.filter(role=User.Role.STUDENT),
         widget=forms.Select(attrs={'class': 'form-select'}),
         label='Student',
-        help_text='Select a student without an assigned academic level'
+        help_text='Select a student to enroll'
+    )
+    course = forms.ModelChoiceField(
+        queryset=Course.objects.all(),
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        label='Course',
+        help_text='Select the course/activity to enroll the student into'
     )
     level = forms.ModelChoiceField(
         queryset=AcademicLevel.objects.all(),
         widget=forms.Select(attrs={'class': 'form-select'}),
-        label='Academic Level',
-        help_text='Select the academic level to assign to this student'
+        label='Class',
+        required=False,
+        help_text='Optional: select a class for this enrollment'
     )
 
     def save(self):
-        """Update the user's academic_level field"""
+        """Create an Enrollment for the selected student and course/level"""
         student = self.cleaned_data['student']
-        level = self.cleaned_data['level']
-        student.academic_level = level
-        student.save()
-        return student
+        course = self.cleaned_data['course']
+        level = self.cleaned_data.get('level')
+        # create active enrollment; let model validation handle conflicts
+        enrollment = Enrollment.objects.create(student=student, course=course, level=level, is_active=True)
+        return enrollment
 
 
 class EnrollmentEditForm(forms.Form):
-    """Form to edit an existing student's academic level (student field is read-only)"""
+    """Form to edit an existing student's class (student field is read-only)"""
     student = forms.CharField(
         widget=forms.TextInput(attrs={
             'class': 'form-control', 
@@ -125,8 +133,8 @@ class EnrollmentEditForm(forms.Form):
     level = forms.ModelChoiceField(
         queryset=AcademicLevel.objects.all(),
         widget=forms.Select(attrs={'class': 'form-select'}),
-        label='Academic Level',
-        help_text='Select the new academic level for this student'
+    label='Class',
+    help_text='Select the new class for this student'
     )
     
     def __init__(self, *args, user_instance=None, **kwargs):
@@ -159,7 +167,8 @@ class EnrollmentModelForm(forms.ModelForm):
         }
     class Meta:
         model = Enrollment
-        fields = ['student', 'level', 'is_active']
+        fields = ['student', 'course', 'level', 'is_active']
+        
         widgets = {
             'student': forms.Select(attrs={'class': 'form-select'}),
             'level': forms.Select(attrs={'class': 'form-select'}),
@@ -168,15 +177,16 @@ class EnrollmentModelForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Only show students who don't have active enrollments (for new enrollments)
-        if not self.instance.pk:
-            enrolled_student_ids = Enrollment.objects.filter(
-                is_active=True
-            ).values_list('student_id', flat=True)
-            
-            self.fields['student'].queryset = User.objects.filter(
-                role=User.Role.STUDENT
-            ).exclude(id__in=enrolled_student_ids)
+        # If editing an existing enrollment, make the student field read-only so it cannot be changed here
+        if self.instance and getattr(self.instance, 'pk', None):
+            # disable changing student on edit
+            if 'student' in self.fields:
+                self.fields['student'].disabled = True
+                self.fields['student'].widget.attrs.update({'readonly': 'readonly', 'style': 'background-color: #e9ecef; cursor: not-allowed;'})
+
+        # For backward compatibility we do not prevent selecting students who have other active enrollments
+        # when creating new enrollments, because course-based enrollments are allowed to be multiple. If you
+        # want to restrict this list, customize the filtering here.
 
             
 class LiveClassForm(forms.ModelForm):
@@ -201,12 +211,12 @@ class LiveClassForm(forms.ModelForm):
         }
 
 
-class ExtraCurricularActivityForm(forms.ModelForm):
+class CourseForm(forms.ModelForm):
     class Meta:
-        model = ExtraCurricularActivity
+        model = Course
         fields = ['title', 'description', 'participants', 'start_time', 'end_time', 'image']
         widgets = {
-            'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter activity title'}),
+            'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter course title'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Enter description'}),
             'participants': forms.SelectMultiple(attrs={'class': 'form-select', 'size': '5'}),
             'start_time': forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}),
@@ -226,7 +236,7 @@ class VideoUploadForm(forms.ModelForm):
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Enter description'}),
             'url': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'Enter video URL'}),
             'course': forms.Select(attrs={'class': 'form-select', 'placeholder': 'Select extra-curricular activity (if applicable)'}),
-            'level': forms.Select(attrs={'class': 'form-select', 'placeholder': 'Select academic level'}),
+            'level': forms.Select(attrs={'class': 'form-select', 'placeholder': 'Select class'}),
             'subject': forms.Select(attrs={'class': 'form-select', 'placeholder': 'Select subject'}),
             'stream': forms.SelectMultiple(attrs={'class': 'form-select', 'placeholder': 'Select stream (if applicable)'}),
             'teacher': forms.Select(attrs={'class': 'form-select', 'placeholder': 'Select teacher'}),

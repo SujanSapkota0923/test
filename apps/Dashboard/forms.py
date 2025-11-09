@@ -23,7 +23,7 @@ class UserLoginForm(forms.Form):
     password = forms.CharField(widget=forms.PasswordInput(attrs={'placeholder': 'Password'}))
 
 
-from apps.Course.models import AcademicLevel, Stream, Subject, Enrollment, LiveClass, ExtraCurricularActivity, Video, User
+from apps.Course.models import AcademicLevel, Stream, Subject, Enrollment, LiveClass, Course, Video, User
 
 # ============================================
 # USER FORMS
@@ -212,7 +212,7 @@ class LiveClassForm(forms.ModelForm):
 
 from django.forms import inlineformset_factory
 from apps.Course import models
-class ExtraCurricularActivityForm(forms.ModelForm):
+class CourseForm(forms.ModelForm):
     # Field to select existing videos to associate with this activity
     videos = forms.ModelMultipleChoiceField(
         queryset=models.Video.objects.all(),
@@ -226,7 +226,7 @@ class ExtraCurricularActivityForm(forms.ModelForm):
     )
     
     class Meta:
-        model = ExtraCurricularActivity
+        model = Course
         fields = ['title', 'description', 'cost', 'start_time', 'end_time', 'image', 'participants']
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., Annual Sports Day'}),
@@ -292,7 +292,7 @@ class VideoForm(forms.ModelForm):
 # VIDEO INLINE FORMSET FOR ACTIVITY
 # ============================================
 VideoFormSet = inlineformset_factory(
-    ExtraCurricularActivity,
+    Course,
     Video,
     fields=['title', 'description', 'url', 'course', 'level', 'subject', 'stream', 'teacher', 'cost', 'image'],
     labels = {

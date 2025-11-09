@@ -6,11 +6,11 @@ from django.urls import reverse
 from django.db.models import Q, Count
 from apps.Course import models
 from apps.Course.models import User
-from apps.Course.forms import EnrollmentEditForm
+from apps.Course.forms import EnrollmentEditForm, EnrollmentModelForm
 from .forms import (
     UserForm, AcademicLevelForm, StreamForm, 
     SubjectForm, LiveClassForm, 
-    ExtraCurricularActivityForm, VideoForm, UserLoginForm
+    CourseForm, VideoForm, UserLoginForm
 )
 # ============================================
 # basic page rendering views
@@ -19,7 +19,7 @@ from .forms import (
 
 @login_required
 def course_home_view(request):
-    extra_activities = models.ExtraCurricularActivity.objects.all()
+    extra_activities = models.Course.objects.all()
     extra_activity_count = extra_activities.count()
     limited_activities = extra_activities[:3]
     context = {
@@ -186,7 +186,7 @@ def dashboard_view(request):
     })
 
     # === 2. Extra Curricular Activities ===
-    extra_activities = models.ExtraCurricularActivity.objects.all()
+    extra_activities = models.Course.objects.all()
     context.update({
         'extra_activities': extra_activities,
         'extra_activity_count': extra_activities.count(),
@@ -559,18 +559,18 @@ def subject_delete(request, pk):
 
 @login_required
 def enrollment_detail(request, pk):
-    enrollment = get_object_or_404(models.User, pk=pk)
+    enrollment = get_object_or_404(models.Enrollment, pk=pk)
     if request.method == 'POST':
-        form = EnrollmentEditForm(request.POST, user_instance=enrollment)
+        form = EnrollmentModelForm(request.POST, instance=enrollment)
         if form.is_valid():
             form.save()
-            messages.success(request, f'Academic level updated successfully for {enrollment.get_full_name() or enrollment.username}!')
+            messages.success(request, f'Enrollment updated successfully for {enrollment.student.get_full_name() or enrollment.student.username}!')
             return redirect('dashboard:enrollment_detail', pk=pk)
         else:
             messages.error(request, 'Please correct the errors below.')
     else:
-        form = EnrollmentEditForm(user_instance=enrollment)
-    
+        form = EnrollmentModelForm(instance=enrollment)
+
     context = {
         'form': form,
         'item_name': 'Enrollment',
@@ -673,9 +673,9 @@ def liveclass_delete(request, pk):
 #     return render(request, 'dashboard/activity_list.html', context)
 @login_required
 def activity_detail(request, pk):
-    activity = get_object_or_404(models.ExtraCurricularActivity, pk=pk)
+    activity = get_object_or_404(models.Course, pk=pk)
     if request.method == 'POST':
-        form = ExtraCurricularActivityForm(request.POST, request.FILES, instance=activity)
+        form = CourseForm(request.POST, request.FILES, instance=activity)
         
         if form.is_valid():
             form.save()
@@ -684,7 +684,7 @@ def activity_detail(request, pk):
         else:
             messages.error(request, 'Please correct the errors below.')
     else:
-        form = ExtraCurricularActivityForm(instance=activity)
+        form = CourseForm(instance=activity)
     
     context = {
         'form': form,
@@ -712,7 +712,7 @@ def activity_detail(request, pk):
 
 @login_required
 def activity_delete(request, pk):
-    activity = get_object_or_404(models.ExtraCurricularActivity, pk=pk)
+    activity = get_object_or_404(models.Course, pk=pk)
     if request.method == 'POST':
         title = activity.title
         activity.delete()
@@ -894,7 +894,7 @@ def global_search_view(request):
         
         # Search Courses
         if search_all or search_type == 'courses':
-            results['courses'] = list(models.ExtraCurricularActivity.objects.filter(
+            results['courses'] = list(models.Course.objects.filter(
                 Q(title__icontains=search_term) |
                 Q(description__icontains=search_term)
             )[:20])

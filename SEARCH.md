@@ -191,9 +191,9 @@ def global_search_view(request):
                 Q(phone__icontains=search_term)
             )[:20])
         
-        # Search Courses (ExtraCurricularActivity model)
+    # Search Courses (Course model)
         if search_all or search_type == 'courses':
-            results['courses'] = list(models.ExtraCurricularActivity.objects.filter(
+      results['courses'] = list(models.Course.objects.filter(
                 Q(title__icontains=search_term) |
                 Q(description__icontains=search_term)
             )[:20])
@@ -954,8 +954,8 @@ path('activities/<int:pk>/', views.activity_detail, name='activity_detail'),
 
 ```python
 # Check model first
-class ExtraCurricularActivity(models.Model):
-    title = models.CharField(...)  # Field is 'title', not 'name'
+class Course(models.Model):
+  title = models.CharField(...)  # Field is 'title', not 'name'
 
 # Update query
 Q(title__icontains=search_term)  # Not 'name'
@@ -1181,14 +1181,14 @@ class User(AbstractUser):
                                       blank=True, null=True, related_name='students')
 ```
 
-### Course Model (ExtraCurricularActivity)
+### Course Model (Course)
 ```python
-class ExtraCurricularActivity(models.Model):
-    title = models.CharField(max_length=200)
-    description = models.TextField(blank=True)
-    cost = models.DecimalField(max_digits=8, decimal_places=2, default=0)
-    start_time = models.DateTimeField()
-    end_time = models.DateTimeField()
+class Course(models.Model):
+  title = models.CharField(max_length=200)
+  description = models.TextField(blank=True)
+  cost = models.DecimalField(max_digits=8, decimal_places=2, default=0)
+  start_time = models.DateTimeField()
+  end_time = models.DateTimeField()
 ```
 
 ### Video Model

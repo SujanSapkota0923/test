@@ -1,7 +1,7 @@
 # from .models import Video
 # from .models import Stream
 # from .models import AcademicLevel
-# from .models import User, Subject, ExtraCurricularActivity
+# from .models import User, Subject, Course
 # # importing redis cache library
 # from django.core.cache import cache
 # from django.db.models import Count

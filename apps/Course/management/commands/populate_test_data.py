@@ -15,7 +15,7 @@ from apps.Course.models import (
     Stream,
     Subject,
     Enrollment,
-    ExtraCurricularActivity,
+    Course,
     LiveClass,
     Video,
 )
@@ -71,10 +71,13 @@ class Command(BaseCommand):
         parser.add_argument("--videos", type=int, default=10, help="Number of videos to create")
         parser.add_argument("--liveclasses", type=int, default=8, help="Number of live classes to create")
         parser.add_argument("--fill-all-fields", action="store_true", help="Try to fill every field for selected models")
+        parser.add_argument("--fill-count", type=int, default=1, help="How many fully-filled instances to create per selected model when using --fill-all-fields")
+        parser.add_argument("--fast", action="store_true", help="Use set_unusable_password for created users to speed up bulk creation")
         parser.add_argument("--seed", type=int, help="Optional random seed for Faker and random")
         parser.add_argument("--force", action="store_true", help="Force running even if DEBUG is False")
         parser.add_argument("--max-retries", type=int, default=3, help="Max retries when validation fails for auto-filled instances")
         parser.add_argument("--models", type=str, help="Comma-separated list of model names to auto-fill (e.g. User,AcademicLevel,Video)")
+        parser.add_argument("--no-files", action="store_true", help="Do not create files/images for FileField/ImageField when auto-filling")
 
     def handle(self, *args, **options):
         seed = options.get("seed")
@@ -85,6 +88,7 @@ class Command(BaseCommand):
         fake = Faker()
         force = options.get("force")
         fill_all = options.get("fill_all_fields")
+        no_files = options.get("no_files")
         max_retries = options.get("max_retries") or 3
         models_arg = options.get("models")
 
@@ -147,7 +151,10 @@ class Command(BaseCommand):
                 },
             )
             if created:
-                teacher.set_password("test1234")
+                if options.get("fast"):
+                    teacher.set_unusable_password()
+                else:
+                    teacher.set_password("test1234")
                 teacher.save()
             teachers.append(teacher)
 
@@ -164,30 +171,65 @@ class Command(BaseCommand):
                 },
             )
             if created:
-                student.set_password("test1234")
+                if options.get("fast"):
+                    student.set_unusable_password()
+                else:
+                    student.set_password("test1234")
                 student.save()
             students.append(student)
 
         # Enroll students into random levels (active enrollment)
         for student in students:
-            level = random.choice(levels)
-            enrollment, created = Enrollment.objects.get_or_create(
-                student=student,
-                level=level,
-                defaults={"is_active": True, "joined_at": timezone.now()},
-            )
-            if not created:
-                # ensure active
-                enrollment.is_active = True
-                enrollment.save()
+            # pick a level that has capacity (or unlimited capacity)
+            available_levels = []
+            for l in levels:
+                if l.capacity is None:
+                    available_levels.append(l)
+                else:
+                    current_active = Enrollment.objects.filter(level=l, is_active=True).count()
+                    if current_active < l.capacity:
+                        available_levels.append(l)
 
-        # ExtraCurricularActivity
+            if available_levels:
+                level = random.choice(available_levels)
+                is_active = True
+            else:
+                # no level has free capacity; pick any level but mark enrollment inactive
+                level = random.choice(levels)
+                is_active = False
+
+            try:
+                enrollment, created = Enrollment.objects.get_or_create(
+                    student=student,
+                    level=level,
+                    defaults={"is_active": is_active, "joined_at": timezone.now()},
+                )
+            except Exception:
+                # fallback: try to create an inactive enrollment or skip
+                try:
+                    enrollment, created = Enrollment.objects.get_or_create(
+                        student=student,
+                        level=level,
+                        defaults={"is_active": False, "joined_at": timezone.now()},
+                    )
+                except Exception:
+                    continue
+
+            if not created and is_active and not enrollment.is_active:
+                # try to activate if possible
+                try:
+                    enrollment.is_active = True
+                    enrollment.save()
+                except Exception:
+                    pass
+
+        # Courses (previously ExtraCurricularActivity)
         activities = []
         for i in range(activities_count):
             title = fake.sentence(nb_words=4).rstrip('.')
             start = timezone.now() + timezone.timedelta(days=random.randint(1, 30))
             end = start + timezone.timedelta(hours=random.randint(1, 5))
-            activity, _ = ExtraCurricularActivity.objects.get_or_create(
+            activity, _ = Course.objects.get_or_create(
                 title=title,
                 defaults={
                     "description": fake.paragraph(nb_sentences=2),
@@ -244,7 +286,7 @@ class Command(BaseCommand):
                 "Stream": Stream,
                 "Subject": Subject,
                 "Enrollment": Enrollment,
-                "ExtraCurricularActivity": ExtraCurricularActivity,
+                "Course": Course,
                 "LiveClass": LiveClass,
                 "Video": Video,
                 "User": get_user_model(),
@@ -255,16 +297,22 @@ class Command(BaseCommand):
                 if not model:
                     self.stdout.write(self.style.WARNING(f"Unknown model '{name}' - skipping"))
                     continue
-                # create one instance as sample with all fields filled
-                created = self._create_instance_with_all_fields(model, fake, max_retries)
-                if created:
-                    self.stdout.write(self.style.SUCCESS(f"Created {name} with many fields filled."))
-                else:
-                    self.stdout.write(self.style.WARNING(f"Failed to create valid {name} after {max_retries} retries."))
+                    # create `fill_count` instances with all fields filled
+                    fill_count = options.get("fill_count") or 1
+                    successes = 0
+                    for idx in range(fill_count):
+                        created = self._create_instance_with_all_fields(model, fake, max_retries, no_files=no_files)
+                        if created:
+                            successes += 1
+                            self.stdout.write(self.style.SUCCESS(f"Created {name} (filled) [{idx+1}/{fill_count}]."))
+                        else:
+                            self.stdout.write(self.style.WARNING(f"Failed to create valid {name} on attempt {idx+1}/{fill_count} after {max_retries} retries."))
+                    if successes:
+                        self.stdout.write(self.style.SUCCESS(f"Created {successes}/{fill_count} instances of {name} with many fields filled."))
 
         self.stdout.write(self.style.SUCCESS("Test data population complete."))
 
-    def _create_instance_with_all_fields(self, model, fake, max_retries=3):
+    def _create_instance_with_all_fields(self, model, fake, max_retries=3, no_files=False):
         """Attempt to create one instance of `model` with values for most fields.
         Returns the instance on success, or None on repeated failure.
         """
@@ -312,6 +360,8 @@ class Command(BaseCommand):
             if cls_name == "JSONField":
                 return {"sample": fake.pydict()}
             if cls_name in ("FileField", "ImageField"):
+                if no_files:
+                    return None
                 return make_file_for_field(fname)
             if cls_name == "ForeignKey":
                 rel = field.related_model
