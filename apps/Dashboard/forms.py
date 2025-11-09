@@ -33,6 +33,9 @@ class UserForm(forms.ModelForm):
         model = User
         fields = ['username', 'first_name', 'last_name', 'email', 'role', 'phone', 
                   'bio', 'profile_picture', 'academic_level']
+        labels = {
+            'academic_level': 'Class',
+        }
         widgets = {
             'username': forms.TextInput(attrs={'class': 'form-control'}),
             'first_name': forms.TextInput(attrs={'class': 'form-control'}),
@@ -61,6 +64,9 @@ class UserCreateForm(UserCreationForm):
         model = User
         fields = ['username', 'first_name', 'last_name', 'email', 'password1', 
                   'password2', 'role', 'phone', 'profile_picture', 'academic_level']
+        labels = {
+            'level': 'Class', 
+        },
         widgets = {
             'username': forms.TextInput(attrs={'class': 'form-control'}),
             'first_name': forms.TextInput(attrs={'class': 'form-control'}),
@@ -107,6 +113,9 @@ class StreamForm(forms.ModelForm):
     class Meta:
         model = Stream
         fields = ['name', 'slug', 'level']
+        labels = {
+            'level': 'Class', 
+        }
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., Science'}),
             'slug': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., science'}),
@@ -129,6 +138,9 @@ class SubjectForm(forms.ModelForm):
     class Meta:
         model = Subject
         fields = ['name', 'description', 'levels', 'streams']
+        labels = {
+            'levels': 'Class', 
+        }
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., Mathematics'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
@@ -144,9 +156,13 @@ class SubjectForm(forms.ModelForm):
 # ENROLLMENT FORM
 # ============================================
 class EnrollmentForm(forms.ModelForm):
+    
     class Meta:
         model = Enrollment
         fields = ['student', 'level', 'joined_at', 'is_active']
+        labels = {
+            'level': 'Class', 
+        }
         widgets = {
             'student': forms.Select(attrs={'class': 'form-select'}),
             'level': forms.Select(attrs={'class': 'form-select'}),
@@ -166,8 +182,11 @@ class EnrollmentForm(forms.ModelForm):
 class LiveClassForm(forms.ModelForm):
     class Meta:
         model = LiveClass
-        fields = ['title', 'level', 'subject', 'hosts', 'start_time', 'end_time', 
+        fields = ['title', 'course', 'level', 'subject', 'hosts', 'start_time', 'end_time',
                   'meeting_url', 'description', 'is_recorded', 'recording_url']
+        labels = {
+            'level': 'Class', 
+        }
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., Introduction to Calculus'}),
             'level': forms.Select(attrs={'class': 'form-select'}),
@@ -243,6 +262,9 @@ class VideoForm(forms.ModelForm):
         model = Video
         fields = ['title', 'description', 'url', 'level','course', 'subject', 'stream', 
                   'teacher', 'cost', 'image']
+        labels = {
+            'level': 'Class', 
+        }
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., Algebra Basics'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
@@ -273,6 +295,9 @@ VideoFormSet = inlineformset_factory(
     ExtraCurricularActivity,
     Video,
     fields=['title', 'description', 'url', 'course', 'level', 'subject', 'stream', 'teacher', 'cost', 'image'],
+    labels = {
+            'level': 'Class', 
+        },
     extra=1,
     can_delete=True,
     widgets={

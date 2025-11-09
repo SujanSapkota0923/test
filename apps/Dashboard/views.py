@@ -1,23 +1,17 @@
-from multiprocessing import context
-from urllib import request
-from django.core.files.storage import FileSystemStorage
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from .forms import UserLoginForm
-from apps.Course import models
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib import messages
-from django.contrib.auth.decorators import login_required
 from django.urls import reverse
-from .forms import (
-    UserForm, UserCreateForm, AcademicLevelForm, StreamForm, 
-    SubjectForm, EnrollmentForm, LiveClassForm, 
-    ExtraCurricularActivityForm, VideoForm
-)
+from django.db.models import Q, Count
+from apps.Course import models
+from apps.Course.models import User
 from apps.Course.forms import EnrollmentEditForm
-
+from .forms import (
+    UserForm, AcademicLevelForm, StreamForm, 
+    SubjectForm, LiveClassForm, 
+    ExtraCurricularActivityForm, VideoForm, UserLoginForm
+)
 # ============================================
 # basic page rendering views
 # ============================================
@@ -60,7 +54,7 @@ def subject_list_view(request):
 
 @login_required
 def student_list_view(request):
-    all_users = User.objects.all()
+    all_users = models.User.objects.all()
 
     # Count users by role (single DB query)
     queryset_results = all_users.values('role').annotate(user_count=Count('role'))
@@ -110,7 +104,7 @@ def teacher_list_view(request):
         'teachers': teachers,
         'students': students,
     }
-    return render(request, 'dashboard/teachers.html')
+    return render(request, 'dashboard/teachers.html', context)
 
 @login_required
 def stream_list_view(request):
@@ -136,10 +130,6 @@ def video_list_view(request):
 def enrollment_list_view(request):
     enrolled_students=models.User.objects.filter(role=models.User.Role.STUDENT, academic_level__isnull=True)
     # students registered but not enrolled in any class
-    for enrollment in enrolled_students:
-        print('---')
-        print(f'Enrollment ID: {enrollment.id}, User: {enrollment.username}, Level: {enrollment.academic_level}')
-        print('---')
     context = {
         'enrollmentss': enrolled_students,
     }
@@ -164,7 +154,7 @@ def live_classes_view(request):
 from django.db.models import Count
 # from django.shortcuts import render
 # from . import models
-from apps.Course.models import User, Stream, LiveClass, Video
+
 
 @login_required
 def dashboard_view(request):
@@ -241,7 +231,7 @@ def dashboard_view(request):
     # })
 
     # === 7. Videos ===
-    videos = Video.objects.all().order_by('-pk')
+    videos = models.Video.objects.all().order_by('-pk')
     context.update({
         'videos': videos,
         'video_count': videos.count(),
@@ -787,4 +777,179 @@ def video_delete(request, pk):
         messages.success(request, f'Video "{title}" deleted successfully!')
         return redirect('dashboard:video_home')
     return redirect('dashboard:video_detail', pk=pk)
+
+
+# ============================================
+# Global Search View
+# ============================================
+
+@login_required
+def global_search_view(request):
+    query = request.GET.get('q', '').strip()
+    results = {
+        'query': query,
+        'users': [],
+        'students': [],
+        'teachers': [],
+        'courses': [],
+        'subjects': [],
+        'levels': [],
+        'streams': [],
+        'videos': [],
+        'live_classes': [],
+        'enrollments': [],
+        'error': None,
+    }
+    
+    if not query:
+        return render(request, 'dashboard/search_results.html', results)
+    
+    # Parse search query for prefixes like "user:", "student:", etc.
+    search_type = None
+    search_term = query
+    
+    # Map prefixes to search types
+    prefix_map = {
+        'user': 'users',
+        'users': 'users',
+        'student': 'students',
+        'students': 'students',
+        'teacher': 'teachers',
+        'teachers': 'teachers',
+        'course': 'courses',
+        'courses': 'courses',
+        'subject': 'subjects',
+        'subjects': 'subjects',
+        'level': 'levels',
+        'levels': 'levels',
+        'class': 'levels',
+        'classes': 'levels',
+        'stream': 'streams',
+        'streams': 'streams',
+        'video': 'videos',
+        'videos': 'videos',
+        'live': 'live_classes',
+        'enrollment': 'enrollments',
+        'enrollments': 'enrollments',
+    }
+    
+    if ':' in query:
+        parts = query.split(':', 1)
+        if len(parts) == 2:
+            prefix = parts[0].lower().strip()
+            term = parts[1].strip()
+            
+            # Only use prefix if it's a valid search type AND term is not empty
+            if prefix in prefix_map and term:
+                search_type = prefix_map[prefix]
+                search_term = term
+    
+    # If no specific type or invalid prefix, search all with original query
+    if not search_type:
+        search_term = query
+    
+    # If search_term is empty after parsing, use original query
+    if not search_term:
+        search_term = query
+    
+    # Determine which categories to search
+    search_all = (search_type is None)
+    
+    try:
+        
+        # Search Users (only when specifically requested with "user:" prefix)
+        if search_type == 'users':
+        
+            results['users'] = list(models.User.objects.filter(
+                Q(username__icontains=search_term) |
+                Q(first_name__icontains=search_term) |
+                Q(last_name__icontains=search_term) |
+                Q(email__icontains=search_term) |
+                Q(phone__icontains=search_term)
+            )[:20])
+        
+        # Search Students only
+        if search_all or search_type == 'students':
+            results['students'] = list(models.User.objects.filter(
+                role=models.User.Role.STUDENT
+            ).filter(
+                Q(username__icontains=search_term) |
+                Q(first_name__icontains=search_term) |
+                Q(last_name__icontains=search_term) |
+                Q(email__icontains=search_term) |
+                Q(phone__icontains=search_term)
+            )[:20])
+        
+        # Search Teachers only
+        if search_all or search_type == 'teachers':
+            results['teachers'] = list(models.User.objects.filter(
+                role=models.User.Role.TEACHER
+            ).filter(
+                Q(username__icontains=search_term) |
+                Q(first_name__icontains=search_term) |
+                Q(last_name__icontains=search_term) |
+                Q(email__icontains=search_term) |
+                Q(phone__icontains=search_term)
+            )[:20])
+        
+        # Search Courses
+        if search_all or search_type == 'courses':
+            results['courses'] = list(models.ExtraCurricularActivity.objects.filter(
+                Q(title__icontains=search_term) |
+                Q(description__icontains=search_term)
+            )[:20])
+        
+        # Search Subjects
+        if search_all or search_type == 'subjects':
+            results['subjects'] = list(models.Subject.objects.filter(
+                Q(name__icontains=search_term) |
+                Q(description__icontains=search_term)
+            )[:20])
+        
+        # Search Academic Levels
+        if search_all or search_type == 'levels':
+            results['levels'] = list(models.AcademicLevel.objects.filter(
+                Q(name__icontains=search_term) |
+                Q(slug__icontains=search_term)
+            )[:20])
+        
+        # Search Streams
+        if search_all or search_type == 'streams':
+            results['streams'] = list(models.Stream.objects.filter(
+                Q(name__icontains=search_term)
+            )[:20])
+        
+        # Search Videos
+        if search_all or search_type == 'videos':
+            results['videos'] = list(models.Video.objects.filter(
+                Q(title__icontains=search_term) |
+                Q(description__icontains=search_term)
+            )[:20])
+
+        
+        # Search Live Classes
+        if search_all or search_type == 'live_classes':
+            results['live_classes'] = list(models.LiveClass.objects.filter(
+                Q(title__icontains=search_term) |
+                Q(description__icontains=search_term)
+            )[:20])
+        
+        # Search Enrollments
+        if search_all or search_type == 'enrollments':
+            results['enrollments'] = list(models.Enrollment.objects.filter(
+                Q(student__username__icontains=search_term) |
+                Q(student__first_name__icontains=search_term) |
+                Q(student__last_name__icontains=search_term) |
+                Q(level__name__icontains=search_term)
+            )[:20])
+    
+    except Exception as e:
+        # Log the error and show a friendly message
+        results['error'] = f"An error occurred during search: {str(e)}"
+        import traceback
+    
+    results['search_type'] = search_type
+    results['search_term'] = search_term
+    
+    return render(request, 'dashboard/search_results.html', results)
 

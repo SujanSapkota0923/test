@@ -196,6 +196,38 @@ class Enrollment(models.Model):
             self.left_at = timezone.now()
         
         super().save(*args, **kwargs)
+
+
+# extracurricular activities refers to courses like webdev , cybersecurity , etc.
+
+class ExtraCurricularActivity(models.Model):
+    '''
+    Represents an extra-curricular activity or event.
+    like all the sports activities, arts, debate club, or 
+    extra stuff tought in schools/colleges like 
+    coding, politics, and other informational etc.
+    '''
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    participants = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name="extracurricular_activities", blank=True)
+    cost = models.DecimalField(max_digits=8, decimal_places=2, default=0, help_text="Cost to participate in the activity (0 for free)")
+    start_time = models.DateTimeField()
+    end_time = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    image = models.ImageField(upload_to='activity_images/', blank=True, null=True)
+
+    class Meta:
+        ordering = ("-start_time",)
+
+    def clean(self):
+        # Check if both start_time and end_time are provided before comparing
+        if self.start_time and self.end_time:
+            if self.end_time <= self.start_time:
+                raise ValidationError("end_time must be after start_time")
+
+    def __str__(self):
+        return self.title
+    
     
 
 class LiveClass(models.Model):
@@ -209,7 +241,8 @@ class LiveClass(models.Model):
     - is_recorded: whether the session is recorded and where it can be found (optional)
     """
     title = models.CharField(max_length=200)
-    level = models.ForeignKey(AcademicLevel, related_name="live_classes", on_delete=models.CASCADE)
+    course = models.ForeignKey(ExtraCurricularActivity, related_name="live_classes", on_delete=models.CASCADE, blank=True, null=True)
+    level = models.ForeignKey(AcademicLevel, related_name="live_classes", on_delete=models.CASCADE, blank=True, null=True) # class level
     subject = models.ForeignKey(Subject, related_name="live_classes", on_delete=models.SET_NULL, null=True, blank=True)
     hosts = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="hosted_live_classes", limit_choices_to={"role": User.Role.TEACHER}, blank=True, null=True, help_text="Teachers hosting this live class")
     start_time = models.DateTimeField()
@@ -247,34 +280,7 @@ class LiveClass(models.Model):
         return f"{self.title} — {self.subject} ({self.start_time:%Y-%m-%d %H:%M})"
 
 # extra curricular activities refers to course in this project.
-class ExtraCurricularActivity(models.Model):
-    '''
-    Represents an extra-curricular activity or event.
-    like all the sports activities, arts, debate club, or 
-    extra stuff tought in schools/colleges like 
-    coding, politics, and other informational etc.
-    '''
-    title = models.CharField(max_length=200)
-    description = models.TextField(blank=True)
-    participants = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name="extracurricular_activities", blank=True)
-    cost = models.DecimalField(max_digits=8, decimal_places=2, default=0, help_text="Cost to participate in the activity (0 for free)")
-    start_time = models.DateTimeField()
-    end_time = models.DateTimeField()
-    created_at = models.DateTimeField(auto_now_add=True)
-    image = models.ImageField(upload_to='activity_images/', blank=True, null=True)
 
-    class Meta:
-        ordering = ("-start_time",)
-
-    def clean(self):
-        # Check if both start_time and end_time are provided before comparing
-        if self.start_time and self.end_time:
-            if self.end_time <= self.start_time:
-                raise ValidationError("end_time must be after start_time")
-
-    def __str__(self):
-        return self.title
-    
 class Video(models.Model):
     '''
     Represents stored videos related to courses or activities.

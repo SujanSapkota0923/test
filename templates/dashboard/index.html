@@ -253,6 +253,170 @@
 				</div>
 			</div>
 
+			<!-- Quick Actions -->
+			<div class="row g-3 mb-4">
+				<div class="col-12">
+					<div class="content-card-modern">
+						<div class="card-header-modern">
+							<div class="d-flex align-items-center gap-3">
+								<div class="card-icon-modern"><i class="fas fa-bolt"></i></div>
+								<div>
+									<h4 class="card-title-modern">Quick Actions</h4>
+									<div class="card-subtitle">Create or navigate fast</div>
+								</div>
+							</div>
+						</div>
+						<div class="card-body-modern">
+							<div class="row g-2 g-md-3">
+								<div class="col-6 col-md-4 col-lg-2"><a href="{% url 'add_subject' %}" class="btn btn-create-modern w-100"><i class="fas fa-book-medical me-1"></i> Subject</a></div>
+								<div class="col-6 col-md-4 col-lg-2"><a href="{% url 'add_activity' %}" class="btn btn-create-modern w-100"><i class="fas fa-graduation-cap me-1"></i> Course</a></div>
+								<div class="col-6 col-md-4 col-lg-2"><a href="{% url 'dashboard:live_classes' %}" class="btn btn-create-modern w-100"><i class="fas fa-video me-1"></i> Live</a></div>
+								<div class="col-6 col-md-4 col-lg-2"><a href="{% url 'dashboard:video_home' %}" class="btn btn-create-modern w-100"><i class="fas fa-upload me-1"></i> Video</a></div>
+								<div class="col-6 col-md-4 col-lg-2"><a href="{% url 'add_user' %}" class="btn btn-create-modern w-100"><i class="fas fa-user-plus me-1"></i> Student</a></div>
+								<div class="col-6 col-md-4 col-lg-2"><a href="{% url 'dashboard:teacher_home' %}" class="btn btn-create-modern w-100"><i class="fas fa-chalkboard-teacher me-1"></i> Teacher</a></div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Activity & Schedule -->
+			<div class="row g-4 mb-4">
+				<div class="col-12 col-lg-6">
+					<div class="content-card-modern">
+						<div class="card-header-modern">
+							<div class="d-flex align-items-center gap-3">
+								<div class="card-icon-modern"><i class="fas fa-stream"></i></div>
+								<div>
+									<h4 class="card-title-modern">Recent Activity</h4>
+									<div class="card-subtitle">Latest updates across the platform</div>
+								</div>
+							</div>
+						</div>
+						<div class="card-body-modern">
+							{% if recent_activity %}
+							<div class="item-list-modern">
+								{% for item in recent_activity %}
+								<div class="list-item-modern">
+									<div class="d-flex align-items-center gap-3">
+										<div class="item-content">
+											<div class="item-title">{{ item.title }}</div>
+											<div class="item-meta">
+												<span>{{ item.category }}</span>
+												<span>{{ item.timestamp|date:"d M, h:i A" }}</span>
+											</div>
+										</div>
+										<div class="item-action">
+											<a href="{{ item.url }}" class="btn btn-view-modern">View</a>
+										</div>
+									</div>
+								</div>
+								{% endfor %}
+							</div>
+							{% else %}
+							<div class="empty-state"><i class="fas fa-bell"></i><div class="empty-state-text">No recent activity</div></div>
+							{% endif %}
+						</div>
+					</div>
+				</div>
+
+				<div class="col-12 col-lg-6">
+					<div class="content-card-modern">
+						<div class="card-header-modern">
+							<div class="d-flex align-items-center gap-3">
+								<div class="card-icon-modern"><i class="fas fa-calendar-alt"></i></div>
+								<div>
+									<h4 class="card-title-modern">Upcoming Schedule</h4>
+									<div class="card-subtitle">Classes and live sessions</div>
+								</div>
+							</div>
+						</div>
+						<div class="card-body-modern">
+							{% if upcoming_items %}
+							<div class="item-list-modern">
+								{% for ev in upcoming_items %}
+								<div class="list-item-modern">
+									<div class="d-flex align-items-center gap-3">
+										<div class="item-content">
+											<div class="item-title">{{ ev.title }}</div>
+											<div class="item-meta">
+												<span>{{ ev.date|date:"d M" }}</span>
+												<span>{{ ev.time|time:"h:i A" }}</span>
+											</div>
+										</div>
+										<div class="item-action">
+											<a href="{{ ev.url }}" class="btn btn-view-modern">Open</a>
+										</div>
+									</div>
+								</div>
+								{% endfor %}
+							</div>
+							{% else %}
+							<div class="empty-state"><i class="fas fa-calendar-times"></i><div class="empty-state-text">No upcoming items</div></div>
+							{% endif %}
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Trends & Top Content -->
+			<div class="row g-4 mb-4">
+				<div class="col-12 col-lg-6">
+					<div class="content-card-modern">
+						<div class="card-header-modern">
+							<div class="d-flex align-items-center gap-3">
+								<div class="card-icon-modern"><i class="fas fa-chart-line"></i></div>
+								<div>
+									<h4 class="card-title-modern">Enrollment Trend</h4>
+									<div class="card-subtitle">Monthly overview</div>
+								</div>
+							</div>
+						</div>
+						<div class="card-body-modern">
+							<canvas id="enrollmentTrendChart" height="160" aria-label="Enrollment trend chart" role="img"></canvas>
+						</div>
+					</div>
+				</div>
+
+				<div class="col-12 col-lg-6">
+					<div class="content-card-modern">
+						<div class="card-header-modern">
+							<div class="d-flex align-items-center gap-3">
+								<div class="card-icon-modern"><i class="fas fa-fire"></i></div>
+								<div>
+									<h4 class="card-title-modern">Top Videos</h4>
+									<div class="card-subtitle">Most watched this week</div>
+								</div>
+							</div>
+						</div>
+						<div class="card-body-modern">
+							{% if top_videos %}
+							<div class="item-list-modern">
+								{% for video in top_videos %}
+								<div class="list-item-modern">
+									<div class="d-flex align-items-center gap-3">
+										<div class="item-content">
+											<div class="item-title">{{ video.title }}</div>
+											<div class="item-meta">
+												<span>{{ video.views }} views</span>
+												<span>{{ video.duration }}</span>
+											</div>
+										</div>
+										<div class="item-action">
+											<a href="{{ video.url }}" class="btn btn-view-modern">Watch</a>
+										</div>
+									</div>
+								</div>
+								{% endfor %}
+							</div>
+							{% else %}
+							<div class="empty-state"><i class="fas fa-play"></i><div class="empty-state-text">No data yet</div></div>
+							{% endif %}
+						</div>
+					</div>
+				</div>
+			</div>
+
 		</div>
 	</div>
 </div>

@@ -62,6 +62,9 @@ class StreamForm(forms.ModelForm):
     class Meta:
         model = Stream
         fields = ['name', 'slug', 'level']
+        labels = {
+            'level': 'Class', 
+        }
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter stream name (e.g., Science)'}),
             'slug': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter slug (e.g., science)'}),
@@ -73,6 +76,9 @@ class SubjectForm(forms.ModelForm):
     class Meta:
         model = Subject
         fields = ['name', 'description', 'levels', 'streams']
+        labels = {
+            'levels': 'Class', 
+        }
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter subject name'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Enter description'}),
@@ -148,6 +154,9 @@ class EnrollmentEditForm(forms.Form):
 
 class EnrollmentModelForm(forms.ModelForm):
     """Original enrollment form (kept for backward compatibility if needed)"""
+    labels = {
+            'level': 'Class', 
+        }
     class Meta:
         model = Enrollment
         fields = ['student', 'level', 'is_active']
@@ -173,9 +182,13 @@ class EnrollmentModelForm(forms.ModelForm):
 class LiveClassForm(forms.ModelForm):
     class Meta:
         model = LiveClass
-        fields = ['title', 'level', 'subject', 'hosts', 'start_time', 'end_time', 'meeting_url', 'description', 'is_recorded', 'recording_url']
+        fields = ['title', 'course' ,'level', 'subject', 'hosts', 'start_time', 'end_time', 'meeting_url', 'description', 'is_recorded', 'recording_url']
+        labels = {
+            'level': 'Class', 
+        }
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter class title'}),
+            'course': forms.Select(attrs={'class': 'form-select'}),
             'level': forms.Select(attrs={'class': 'form-select'}),
             'subject': forms.Select(attrs={'class': 'form-select'}),
             'hosts': forms.Select(attrs={'class': 'form-select'}),
@@ -202,6 +215,9 @@ class ExtraCurricularActivityForm(forms.ModelForm):
         }
 
 class VideoUploadForm(forms.ModelForm):
+    labels = {
+            'level': 'Class', 
+        }
     class Meta:
         model = Video
         fields = ['title', 'description', 'url', 'course', 'level', 'subject', 'stream','teacher','cost', 'image']

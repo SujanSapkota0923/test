@@ -1,0 +1,544 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Search Results{% endblock %}
+
+{% block content %}
+<div class="app-wrapper">
+  <div class="app-content pt-3 p-md-3 p-lg-4">
+    <div class="container-xl">
+      
+      <div class="row g-3 mb-4 align-items-center justify-content-between">
+        <div class="col-auto">
+          <h1 class="app-page-title mb-0">Search Results</h1>
+        </div>
+      </div>
+      
+      {% if error %}
+        <div class="alert alert-danger mb-4">
+          <div class="d-flex align-items-center">
+            <i class="fas fa-exclamation-triangle me-3"></i>
+            <div>
+              <strong>Error:</strong> {{ error }}
+            </div>
+          </div>
+        </div>
+      {% endif %}
+      
+      {% if query %}
+        <div class="alert alert-info mb-4">
+          <div class="d-flex align-items-center">
+            <i class="fas fa-search me-3"></i>
+            <div>
+              <strong>Search Query:</strong> 
+              {% if search_type %}
+                <span class="badge bg-primary">{{ search_type }}</span>
+              {% else %}
+                <span class="badge bg-success">All Categories</span>
+              {% endif %}
+              "{{ search_term }}"
+              <p class="mb-0 mt-2 small text-muted">
+                <strong>Tip:</strong> Use prefixes like <code>user:</code>, <code>student:</code>, <code>teacher:</code>, <code>course:</code>, <code>subject:</code>, <code>level:</code>, <code>stream:</code>, <code>video:</code>, or <code>live:</code> to filter results.
+              </p>
+              <p class="mb-0 mt-2 small">
+                <strong>Results found in:</strong>
+                {% if users|length > 0 %}<span class="badge bg-secondary me-1">Users ({{ users|length }})</span>{% endif %}
+                {% if students|length > 0 %}<span class="badge bg-success me-1">Students ({{ students|length }})</span>{% endif %}
+                {% if teachers|length > 0 %}<span class="badge bg-info me-1">Teachers ({{ teachers|length }})</span>{% endif %}
+                {% if courses|length > 0 %}<span class="badge bg-warning me-1">Courses ({{ courses|length }})</span>{% endif %}
+                {% if subjects|length > 0 %}<span class="badge bg-primary me-1">Subjects ({{ subjects|length }})</span>{% endif %}
+                {% if levels|length > 0 %}<span class="badge bg-secondary me-1">Levels ({{ levels|length }})</span>{% endif %}
+                {% if streams|length > 0 %}<span class="badge bg-info me-1">Streams ({{ streams|length }})</span>{% endif %}
+                {% if videos|length > 0 %}<span class="badge bg-danger me-1">Videos ({{ videos|length }})</span>{% endif %}
+                {% if live_classes|length > 0 %}<span class="badge bg-success me-1">Live Classes ({{ live_classes|length }})</span>{% endif %}
+                {% if enrollments|length > 0 %}<span class="badge bg-primary me-1">Enrollments ({{ enrollments|length }})</span>{% endif %}
+              </p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Users Results -->
+        {% if users %}
+        <div class="app-card app-card-orders-table shadow-sm mb-4">
+          <div class="app-card-header p-3">
+            <div class="row align-items-center">
+              <div class="col">
+                <h4 class="app-card-title mb-0">
+                  <i class="fas fa-users text-primary me-2"></i>
+                  Users ({{ users|length }})
+                </h4>
+              </div>
+            </div>
+          </div>
+          <div class="app-card-body">
+            <div class="table-responsive">
+              <table class="table table-hover mb-0">
+                <thead>
+                  <tr>
+                    <th>Username</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Role</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for user in users %}
+                  <tr>
+                    <td>{{ user.username }}</td>
+                    <td>{{ user.first_name }} {{ user.last_name }}</td>
+                    <td>{{ user.email }}</td>
+                    <td>{{ user.phone|default:"-" }}</td>
+                    <td><span class="badge bg-secondary">{{ user.get_role_display }}</span></td>
+                    <td>
+                      <a href="{% url 'dashboard:user_detail' user.pk %}" class="btn btn-sm btn-primary">
+                        <i class="fas fa-eye"></i> View
+                      </a>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+        
+        <!-- Students Results -->
+        {% if students %}
+        <div class="app-card app-card-orders-table shadow-sm mb-4">
+          <div class="app-card-header p-3">
+            <div class="row align-items-center">
+              <div class="col">
+                <h4 class="app-card-title mb-0">
+                  <i class="fas fa-user-graduate text-success me-2"></i>
+                  Students ({{ students|length }})
+                </h4>
+              </div>
+            </div>
+          </div>
+          <div class="app-card-body">
+            <div class="table-responsive">
+              <table class="table table-hover mb-0">
+                <thead>
+                  <tr>
+                    <th>Username</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Level</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for student in students %}
+                  <tr>
+                    <td>{{ student.username }}</td>
+                    <td>{{ student.first_name }} {{ student.last_name }}</td>
+                    <td>{{ student.email }}</td>
+                    <td>{{ student.phone|default:"-" }}</td>
+                    <td>{{ student.academic_level.name|default:"-" }}</td>
+                    <td>
+                      <a href="{% url 'dashboard:user_detail' student.pk %}" class="btn btn-sm btn-success">
+                        <i class="fas fa-eye"></i> View
+                      </a>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+        
+        <!-- Teachers Results -->
+        {% if teachers %}
+        <div class="app-card app-card-orders-table shadow-sm mb-4">
+          <div class="app-card-header p-3">
+            <div class="row align-items-center">
+              <div class="col">
+                <h4 class="app-card-title mb-0">
+                  <i class="fas fa-chalkboard-teacher text-info me-2"></i>
+                  Teachers ({{ teachers|length }})
+                </h4>
+              </div>
+            </div>
+          </div>
+          <div class="app-card-body">
+            <div class="table-responsive">
+              <table class="table table-hover mb-0">
+                <thead>
+                  <tr>
+                    <th>Username</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for teacher in teachers %}
+                  <tr>
+                    <td>{{ teacher.username }}</td>
+                    <td>{{ teacher.first_name }} {{ teacher.last_name }}</td>
+                    <td>{{ teacher.email }}</td>
+                    <td>{{ teacher.phone|default:"-" }}</td>
+                    <td>
+                      <a href="{% url 'dashboard:user_detail' teacher.pk %}" class="btn btn-sm btn-info">
+                        <i class="fas fa-eye"></i> View
+                      </a>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+        
+        <!-- Courses Results -->
+        {% if courses %}
+        <div class="app-card app-card-orders-table shadow-sm mb-4">
+          <div class="app-card-header p-3">
+            <div class="row align-items-center">
+              <div class="col">
+                <h4 class="app-card-title mb-0">
+                  <i class="fas fa-graduation-cap text-warning me-2"></i>
+                  Courses ({{ courses|length }})
+                </h4>
+              </div>
+            </div>
+          </div>
+          <div class="app-card-body">
+            <div class="table-responsive">
+              <table class="table table-hover mb-0">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Description</th>
+                    <th>Cost</th>
+                    <th>Start Date</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for course in courses %}
+                  <tr>
+                    <td>{{ course.title }}</td>
+                    <td>{{ course.description|truncatewords:10 }}</td>
+                    <td>${{ course.cost }}</td>
+                    <td>{{ course.start_time|date:"M d, Y" }}</td>
+                    <td>
+                      <a href="{% url 'dashboard:activity_detail' course.pk %}" class="btn btn-sm btn-warning">
+                        <i class="fas fa-eye"></i> View
+                      </a>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+        
+        <!-- Subjects Results -->
+        {% if subjects %}
+        <div class="app-card app-card-orders-table shadow-sm mb-4">
+          <div class="app-card-header p-3">
+            <div class="row align-items-center">
+              <div class="col">
+                <h4 class="app-card-title mb-0">
+                  <i class="fas fa-book text-primary me-2"></i>
+                  Subjects ({{ subjects|length }})
+                </h4>
+              </div>
+            </div>
+          </div>
+          <div class="app-card-body">
+            <div class="table-responsive">
+              <table class="table table-hover mb-0">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Description</th>
+                    <th>Level</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for subject in subjects %}
+                  <tr>
+                    <td>{{ subject.name }}</td>
+                    <td>{{ subject.description|truncatewords:10|default:"-" }}</td>
+                    <td>{{ subject.levels.name|default:"-" }}</td>
+                    <td>
+                      <a href="{% url 'dashboard:subject_detail' subject.pk %}" class="btn btn-sm btn-primary">
+                        <i class="fas fa-eye"></i> View
+                      </a>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+        
+        <!-- Levels Results -->
+        {% if levels %}
+        <div class="app-card app-card-orders-table shadow-sm mb-4">
+          <div class="app-card-header p-3">
+            <div class="row align-items-center">
+              <div class="col">
+                <h4 class="app-card-title mb-0">
+                  <i class="fas fa-layer-group text-secondary me-2"></i>
+                  Academic Levels ({{ levels|length }})
+                </h4>
+              </div>
+            </div>
+          </div>
+          <div class="app-card-body">
+            <div class="table-responsive">
+              <table class="table table-hover mb-0">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Slug</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for level in levels %}
+                  <tr>
+                    <td>{{ level.name }}</td>
+                    <td><code>{{ level.slug }}</code></td>
+                    <td>
+                      <a href="{% url 'dashboard:class_level' level.slug %}" class="btn btn-sm btn-secondary">
+                        <i class="fas fa-eye"></i> View
+                      </a>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+        
+        <!-- Streams Results -->
+        {% if streams %}
+        <div class="app-card app-card-orders-table shadow-sm mb-4">
+          <div class="app-card-header p-3">
+            <div class="row align-items-center">
+              <div class="col">
+                <h4 class="app-card-title mb-0">
+                  <i class="fas fa-stream text-info me-2"></i>
+                  Streams ({{ streams|length }})
+                </h4>
+              </div>
+            </div>
+          </div>
+          <div class="app-card-body">
+            <div class="table-responsive">
+              <table class="table table-hover mb-0">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for stream in streams %}
+                  <tr>
+                    <td>{{ stream.name }}</td>
+                    <td>
+                      <a href="{% url 'dashboard:stream_detail' stream.pk %}" class="btn btn-sm btn-info">
+                        <i class="fas fa-eye"></i> View
+                      </a>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+        
+        <!-- Videos Results -->
+        {% if videos %}
+        <div class="app-card app-card-orders-table shadow-sm mb-4">
+          <div class="app-card-header p-3">
+            <div class="row align-items-center">
+              <div class="col">
+                <h4 class="app-card-title mb-0">
+                  <i class="fas fa-play-circle text-danger me-2"></i>
+                  Videos ({{ videos|length }})
+                </h4>
+              </div>
+            </div>
+          </div>
+          <div class="app-card-body">
+            <div class="table-responsive">
+              <table class="table table-hover mb-0">
+                <thead>
+                  <tr>
+                    <th>Title</th>
+                    <th>Description</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for video in videos %}
+                  <tr>
+                    <td>{{ video.title }}</td>
+                    <td>{{ video.description|truncatewords:10 }}</td>
+                    <td>
+                      <a href="{% url 'dashboard:video_detail' video.pk %}" class="btn btn-sm btn-danger">
+                        <i class="fas fa-eye"></i> View
+                      </a>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+        
+        <!-- Live Classes Results -->
+        {% if live_classes %}
+        <div class="app-card app-card-orders-table shadow-sm mb-4">
+          <div class="app-card-header p-3">
+            <div class="row align-items-center">
+              <div class="col">
+                <h4 class="app-card-title mb-0">
+                  <i class="fas fa-video text-success me-2"></i>
+                  Live Classes ({{ live_classes|length }})
+                </h4>
+              </div>
+            </div>
+          </div>
+          <div class="app-card-body">
+            <div class="table-responsive">
+              <table class="table table-hover mb-0">
+                <thead>
+                  <tr>
+                    <th>Title</th>
+                    <th>Description</th>
+                    <th>Date</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for live in live_classes %}
+                  <tr>
+                    <td>{{ live.title }}</td>
+                    <td>{{ live.description|truncatewords:10 }}</td>
+                    <td>{{ live.start_time|date:"M d, Y H:i" }}</td>
+                    <td>
+                      <a href="{% url 'dashboard:liveclass_detail' live.pk %}" class="btn btn-sm btn-success">
+                        <i class="fas fa-eye"></i> View
+                      </a>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+        
+        <!-- Enrollments Results -->
+        {% if enrollments %}
+        <div class="app-card app-card-orders-table shadow-sm mb-4">
+          <div class="app-card-header p-3">
+            <div class="row align-items-center">
+              <div class="col">
+                <h4 class="app-card-title mb-0">
+                  <i class="fas fa-user-check text-primary me-2"></i>
+                  Enrollments ({{ enrollments|length }})
+                </h4>
+              </div>
+            </div>
+          </div>
+          <div class="app-card-body">
+            <div class="table-responsive">
+              <table class="table table-hover mb-0">
+                <thead>
+                  <tr>
+                    <th>Student</th>
+                    <th>Level</th>
+                    <th>Status</th>
+                    <th>Joined Date</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for enrollment in enrollments %}
+                  <tr>
+                    <td>{{ enrollment.student.username }}</td>
+                    <td>{{ enrollment.level.name }}</td>
+                    <td>
+                      {% if enrollment.is_active %}
+                        <span class="badge bg-success">Active</span>
+                      {% else %}
+                        <span class="badge bg-secondary">Inactive</span>
+                      {% endif %}
+                    </td>
+                    <td>{{ enrollment.joined_at|date:"M d, Y" }}</td>
+                    <td>
+                      <a href="{% url 'dashboard:enrollment_detail' enrollment.pk %}" class="btn btn-sm btn-primary">
+                        <i class="fas fa-eye"></i> View
+                      </a>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+        
+        <!-- No Results -->
+        {% if not users and not students and not teachers and not courses and not subjects and not levels and not streams and not videos and not live_classes and not enrollments %}
+        <div class="alert alert-warning">
+          <div class="text-center py-5">
+            <i class="fas fa-search fa-3x text-muted mb-3"></i>
+            <h4>No Results Found</h4>
+            <p class="text-muted">Try adjusting your search query or use different keywords.</p>
+          </div>
+        </div>
+        {% endif %}
+        
+      {% else %}
+        <div class="alert alert-info">
+          <div class="text-center py-5">
+            <i class="fas fa-info-circle fa-3x text-muted mb-3"></i>
+            <h4>Start Searching</h4>
+            <p class="text-muted">Enter a search query in the search bar above.</p>
+            <p class="mb-0">
+              <strong>Pro Tips:</strong><br>
+              • Search by name, username, email, or phone<br>
+              • Use <code>user:john</code> to search only users<br>
+              • Use <code>student:jane</code> to search only students<br>
+              • Use <code>course:physics</code> to search only courses<br>
+              • And many more prefixes available!
+            </p>
+          </div>
+        </div>
+      {% endif %}
+      
+    </div><!--//container-fluid-->
+  </div><!--//app-content-->
+</div><!--//app-wrapper-->
+{% endblock %}

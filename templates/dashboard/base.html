@@ -25,6 +25,196 @@
   
   <!-- Modern Redesign CSS -->
   <link rel="stylesheet" href="{% static 'dashboard/assets/css/modern-redesign.css' %}" />
+  
+  <style>
+    /* Modern Search Bar Styles */
+    .app-search-box-modern {
+      width: 100%;
+      max-width: 450px;
+    }
+    
+    .search-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+      background: #f8f9fa;
+      border: 2px solid transparent;
+      border-radius: 24px;
+      padding: 8px 16px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+    
+    .search-wrapper:hover {
+      background: #fff;
+      border-color: rgba(21, 163, 98, 0.2);
+      box-shadow: 0 4px 12px rgba(21, 163, 98, 0.08);
+    }
+    
+    .search-wrapper:focus-within {
+      background: #fff;
+      border-color: #15a362;
+      box-shadow: 0 4px 20px rgba(21, 163, 98, 0.15);
+      transform: translateY(-1px);
+    }
+    
+    .search-icon {
+      color: #9ca3af;
+      font-size: 16px;
+      margin-right: 12px;
+      transition: color 0.3s ease;
+    }
+    
+    .search-wrapper:focus-within .search-icon {
+      color: #15a362;
+    }
+    
+    .search-input {
+      flex: 1;
+      border: none;
+      background: transparent;
+      outline: none;
+      font-size: 15px;
+      color: #1f2937;
+      padding: 4px 0;
+      font-weight: 400;
+    }
+    
+    .search-input::placeholder {
+      color: #9ca3af;
+      font-weight: 400;
+    }
+    
+    .btn-clear-search {
+      background: none;
+      border: none;
+      color: #9ca3af;
+      padding: 4px 8px;
+      cursor: pointer;
+      border-radius: 50%;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-left: 4px;
+    }
+    
+    .btn-clear-search:hover {
+      background: rgba(21, 163, 98, 0.1);
+      color: #15a362;
+    }
+    
+    .btn-clear-search i {
+      font-size: 14px;
+    }
+    
+    .search-shortcut {
+      background: #e5e7eb;
+      color: #6b7280;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      margin-left: 8px;
+      font-family: monospace;
+      border: 1px solid #d1d5db;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+      transition: all 0.2s ease;
+    }
+    
+    .search-wrapper:focus-within .search-shortcut {
+      opacity: 0;
+      transform: scale(0.9);
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 991px) {
+      .app-search-box-modern {
+        max-width: 100%;
+      }
+    }
+    
+    @media (max-width: 576px) {
+      .search-wrapper {
+        padding: 6px 12px;
+      }
+      
+      .search-input {
+        font-size: 14px;
+      }
+      
+      .search-shortcut {
+        display: none;
+      }
+    }
+    
+    /* Enhanced Active State Highlighting for Sidebar */
+    .app-nav-modern .nav-link.active {
+      background: linear-gradient(135deg, #15a362 0%, #0f7c4a 100%) !important;
+      color: white !important;
+      box-shadow: 0 4px 12px rgba(21, 163, 98, 0.3), 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+      transform: translateX(4px);
+      position: relative;
+    }
+    
+    .app-nav-modern .nav-link.active::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 4px;
+      height: 60%;
+      background: white;
+      border-radius: 0 4px 4px 0;
+      box-shadow: 0 2px 8px rgba(255, 255, 255, 0.4);
+    }
+    
+    .app-nav-modern .nav-link.active .nav-icon {
+      color: white !important;
+      animation: iconPulse 2s ease-in-out infinite;
+    }
+    
+    .app-nav-modern .nav-link.active .nav-link-text {
+      color: white !important;
+      font-weight: 600 !important;
+    }
+    
+    @keyframes iconPulse {
+      0%, 100% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.1);
+      }
+    }
+    
+    /* Enhanced Active State for Submenu Items */
+    .submenu-modern .submenu-link.active {
+      background: rgba(21, 163, 98, 0.1) !important;
+      color: #15a362 !important;
+      font-weight: 600 !important;
+      border-left: 3px solid #15a362 !important;
+      padding-left: 1.75rem !important;
+    }
+    
+    .submenu-modern .submenu-link.active::before {
+      background: #15a362 !important;
+      width: 8px !important;
+      height: 8px !important;
+      box-shadow: 0 0 8px rgba(21, 163, 98, 0.5) !important;
+    }
+    
+    .submenu-modern .submenu-link.active i {
+      color: #15a362 !important;
+    }
+    
+    /* Hover states shouldn't override active */
+    .app-nav-modern .nav-link.active:hover {
+      background: linear-gradient(135deg, #15a362 0%, #0f7c4a 100%) !important;
+      transform: translateX(4px);
+    }
+  </style>
 </head>
 
 <body class="app">
@@ -41,18 +231,17 @@
             </div>
             
             <!-- Search Box -->
-            <div class="col">
-              <div class="app-search-box">
-                <form class="app-search-form" role="search">
-                  <div class="input-group align-items-center">
-                    <span class="input-group-text border-0 bg-transparent">
-                      <i class="fas fa-search text-muted"></i>
-                    </span>
-                    <input id="global-search" type="text" placeholder="Search…" name="search" aria-label="Search"
-                           class="form-control border-0 shadow-none" autocomplete="off" autocapitalize="off" spellcheck="false" />
-                    <button type="button" class="btn clear-search p-0 ms-1" title="Clear" aria-label="Clear search" hidden>
-                      <i class="fas fa-times-circle text-muted"></i>
+            <div class="col d-flex justify-content-center justify-content-lg-end pe-lg-4">
+              <div class="app-search-box-modern">
+                <form class="app-search-form" action="{% url 'dashboard:global_search' %}" method="GET" role="search">
+                  <div class="search-wrapper">
+                    <i class="fas fa-search search-icon"></i>
+                    <input id="global-search" type="text" placeholder="Search anything... (try: user:john)" name="q" aria-label="Search"
+                           class="search-input" autocomplete="off" autocapitalize="off" spellcheck="false" />
+                    <button type="button" class="btn-clear-search" title="Clear" aria-label="Clear search" hidden>
+                      <i class="fas fa-times"></i>
                     </button>
+                    <kbd class="search-shortcut">/</kbd>
                   </div>
                 </form>
               </div>
@@ -115,7 +304,7 @@
             
             <ul class="app-menu list-unstyled">
               <li class="nav-item">
-                <a class="nav-link {% if current_path == '/' %}active{% endif %}" href="{% url 'dashboard:index' %}">
+                <a class="nav-link {% if request.path == '/' %}active{% endif %}" href="{% url 'dashboard:index' %}">
                   <span class="nav-icon">
                     <i class="fas fa-home"></i>
                   </span>
@@ -124,29 +313,29 @@
               </li>
               
               <li class="nav-item">
-                <a class="nav-link {% if current_path == '/subjects/' %}active{% endif %}"
+                <a class="nav-link {% if '/subjects/' in request.path %}active{% endif %}"
                   href="{% url 'dashboard:subject_home' %}">
                   <span class="nav-icon">
                     <i class="fas fa-book"></i>
                   </span>
                   <span class="nav-link-text">Subjects</span>
-                  <span class="nav-badge">{{ subjects_count|default:"0" }}</span>
+                  <!-- <span class="nav-badge">{{ subjects_count|default:"0" }}</span> -->
                 </a>
               </li>
               
               <li class="nav-item">
-                <a class="nav-link {% if current_path == '/course/' %}active{% endif %}"
+                <a class="nav-link {% if '/course/' in request.path %}active{% endif %}"
                   href="{% url 'dashboard:course_home' %}">
                   <span class="nav-icon">
                     <i class="fas fa-graduation-cap"></i>
                   </span>
                   <span class="nav-link-text">Courses</span>
-                  <span class="nav-badge">{{ courses_count|default:"0" }}</span>
+                  <!-- <span class="nav-badge">{{ courses_count|default:"0" }}</span> -->
                 </a>
               </li>
               
               <li class="nav-item has-submenu">
-                <a class="nav-link submenu-toggle {% if 'class' in current_path %}active{% endif %}"
+                <a class="nav-link submenu-toggle {% if '/class' in request.path %}active{% endif %}"
                   href="#" data-bs-toggle="collapse" data-bs-target="#submenu-1"
                   aria-expanded="false" aria-controls="submenu-1">
                   <span class="nav-icon">
@@ -162,7 +351,7 @@
                   <ul class="submenu-list list-unstyled">
                     {% for level in levels %}
                     <li class="submenu-item">
-                      <a class="submenu-link {% if current_path == '/class/'|add:level.slug %}active{% endif %}" 
+                      <a class="submenu-link {% if level.slug in request.path %}active{% endif %}" 
                          href="{% url 'dashboard:class_level' level.slug %}">
                         {{ level.name }}
                       </a>
@@ -177,7 +366,7 @@
                 </div>
               </li>
               <li class="nav-item">
-                <a class="nav-link {% if 'enrollment' in current_path %}active{% endif %}" 
+                <a class="nav-link {% if '/enrollment' in request.path %}active{% endif %}" 
                    href="{% url 'dashboard:enrollment_home' %}">
                   <span class="nav-icon">
                     <i class="fas fa-user-check"></i>
@@ -193,7 +382,7 @@
             
             <ul class="app-menu list-unstyled">
               <li class="nav-item has-submenu">
-                <a class="nav-link submenu-toggle {% if 'teacher' in current_path or 'student' in current_path %}active{% endif %}" 
+                <a class="nav-link submenu-toggle {% if '/teacher' in request.path or '/student' in request.path %}active{% endif %}" 
                    href="#" data-bs-toggle="collapse" data-bs-target="#submenu-2"
                    aria-expanded="false" aria-controls="submenu-2">
                   <span class="nav-icon">
@@ -207,13 +396,13 @@
                 <div id="submenu-2" class="collapse submenu-modern" data-bs-parent="#menu-accordion">
                   <ul class="submenu-list list-unstyled">
                     <li class="submenu-item">
-                      <a class="submenu-link {% if 'teacher' in current_path %}active{% endif %}" 
+                      <a class="submenu-link {% if '/teacher' in request.path %}active{% endif %}" 
                          href="{% url 'dashboard:teacher_home' %}">
                         <i class="fas fa-chalkboard-teacher me-2"></i> Teachers
                       </a>
                     </li>
                     <li class="submenu-item">
-                      <a class="submenu-link {% if 'student' in current_path %}active{% endif %}" 
+                      <a class="submenu-link {% if '/student' in request.path %}active{% endif %}" 
                          href="{% url 'dashboard:student_home' %}">
                         <i class="fas fa-user-graduate me-2"></i> Students
                       </a>
@@ -223,7 +412,7 @@
               </li>
 
               <li class="nav-item">
-                <a class="nav-link {% if 'stream' in current_path %}active{% endif %}" 
+                <a class="nav-link {% if '/stream' in request.path %}active{% endif %}" 
                    href="{% url 'dashboard:stream_home' %}">
                   <span class="nav-icon">
                     <i class="fas fa-layer-group"></i>
@@ -241,7 +430,7 @@
             
             <ul class="app-menu list-unstyled">
               <li class="nav-item">
-                <a class="nav-link {% if 'live' in current_path %}active{% endif %}" 
+                <a class="nav-link {% if '/live' in request.path %}active{% endif %}" 
                    href="{% url 'dashboard:live_classes' %}">
                   <span class="nav-icon">
                     <i class="fas fa-video"></i>
@@ -252,7 +441,7 @@
               </li>
               
               <li class="nav-item">
-                <a class="nav-link {% if 'video' in current_path %}active{% endif %}" 
+                <a class="nav-link {% if '/video' in request.path %}active{% endif %}" 
                    href="{% url 'dashboard:video_home' %}">
                   <span class="nav-icon">
                     <i class="fas fa-play-circle"></i>
@@ -281,28 +470,28 @@
   <script src="{% static 'dashboard/assets/plugins/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
   <script src="{% static 'dashboard/assets/js/app.js' %}"></script>
   <script>
-    // Lightweight enhancements for the search bar
+    // Modern search bar enhancements
     document.addEventListener('DOMContentLoaded', function () {
       const input = document.getElementById('global-search');
-      const clearBtn = document.querySelector('.app-search-box .clear-search');
-      const box = document.querySelector('.app-search-box');
+      const clearBtn = document.querySelector('.btn-clear-search');
+      const searchWrapper = document.querySelector('.search-wrapper');
 
-      if (!input || !clearBtn || !box) return;
+      if (!input || !clearBtn) return;
 
       const updateState = () => {
         const hasValue = input.value && input.value.trim().length > 0;
         clearBtn.hidden = !hasValue;
-        box.classList.toggle('has-value', hasValue);
       };
 
       input.addEventListener('input', updateState);
+      
       clearBtn.addEventListener('click', () => {
         input.value = '';
         input.focus();
         updateState();
       });
 
-      // Quick focus shortcut: press '/' to focus search when not typing in inputs/textareas
+      // Quick focus shortcut: press '/' to focus search
       window.addEventListener('keydown', (e) => {
         if (e.key === '/' && !e.ctrlKey && !e.metaKey && !e.altKey) {
           const tag = (document.activeElement && document.activeElement.tagName) || '';
@@ -310,6 +499,13 @@
             e.preventDefault();
             input.focus();
           }
+        }
+        
+        // ESC to clear and blur
+        if (e.key === 'Escape' && document.activeElement === input) {
+          input.value = '';
+          input.blur();
+          updateState();
         }
       });
 

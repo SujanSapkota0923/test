@@ -10,15 +10,18 @@
 			<div class="d-flex justify-content-between align-items-center mb-4">
 				<h1 class="app-page-title mb-0">Students</h1>
 				<div class="d-flex align-items-center gap-3">
-					<!-- <form class="table-search-form row gx-1 align-items-center">
+					<form class="table-search-form row gx-2 align-items-center" method="get" action="">
 						<div class="col-auto">
-							<input type="text" id="search-orders" name="searchorders" class="form-control search-orders"
-								placeholder="Search">
+							<div class="input-group align-items-center">
+								<span class="input-group-text border-0 bg-transparent"><i class="fas fa-search text-muted"></i></span>
+								<input type="text" id="students-search" name="q" class="form-control border-0 shadow-none" placeholder="Search students…" aria-label="Search students" value="{{ request.GET.q }}" autocomplete="off" spellcheck="false" />
+								<button type="button" class="btn btn-link px-2 clear-students-search" title="Clear" aria-label="Clear" hidden><i class="fas fa-times-circle text-muted"></i></button>
+							</div>
 						</div>
 						<div class="col-auto">
 							<button type="submit" class="btn app-btn-secondary">Search</button>
 						</div>
-					</form> -->
+					</form>
 					<a class="btn app-btn-primary text-nowrap" href="{% url 'add_user' %}">Create New Student</a>
 				</div>
 			</div>
@@ -28,7 +31,7 @@
 					<div class="app-card app-card-orders-table shadow-sm mb-5">
 						<div class="app-card-body">
 							<div class="table-responsive">
-								<table class="table app-table-hover mb-0 text-left">
+								<table id="students-table" class="table app-table-hover mb-0 text-left">
 									<thead>
 										<tr>
 											<th class="cell">S.N</th>
@@ -50,6 +53,10 @@
 <td class="cell"><a class="btn btn-outline-secondary" href="{% url 'dashboard:user_detail' student.id %}">View</a></td>
 										</tr>
 										{%endfor%}
+
+										<tr class="no-results d-none">
+											<td colspan="6" class="text-center text-muted">No matching students</td>
+										</tr>
 
 
 									</tbody>
@@ -82,4 +89,34 @@
 
 <!-- Page Specific JS -->
 <script src="{% static 'dashboard/assets/js/app.js' %}"></script>
+<script>
+	// Client-side filter to improve UX; server can still handle GET q later
+	(function(){
+		const input = document.getElementById('students-search');
+		const clearBtn = document.querySelector('.clear-students-search');
+		const table = document.getElementById('students-table');
+		if (!input || !table) return;
+
+		const tbody = table.querySelector('tbody');
+		const noResultsRow = tbody.querySelector('.no-results');
+
+		const filter = () => {
+			const q = (input.value || '').toLowerCase().trim();
+			let visible = 0;
+			tbody.querySelectorAll('tr').forEach(tr => {
+				if (tr.classList.contains('no-results')) return; // skip helper row
+				const text = tr.innerText.toLowerCase();
+				const match = !q || text.indexOf(q) !== -1;
+				tr.style.display = match ? '' : 'none';
+				if (match) visible++;
+			});
+			if (noResultsRow) noResultsRow.classList.toggle('d-none', visible !== 0);
+			if (clearBtn) clearBtn.hidden = q.length === 0;
+		};
+
+		input.addEventListener('input', filter);
+		if (clearBtn) clearBtn.addEventListener('click', () => { input.value=''; input.focus(); filter(); });
+		filter();
+	})();
+</script>
 {% endblock %}
