@@ -435,8 +435,12 @@ from django.db.models import Count
 def dashboard_view(request):
     from django.utils import timezone
     from datetime import timedelta
+    from django.db.models import Sum, Avg, Max, Min
     
     context = {}
+    now = timezone.now()
+    week_ago = now - timedelta(days=7)
+    month_ago = now - timedelta(days=30)
 
     # === 1. User Statistics ===
     all_users = User.objects.select_related('academic_level', 'course').all()
@@ -456,13 +460,28 @@ def dashboard_view(request):
     
     # Additional user statistics
     enrolled_students = sum(1 for s in students if s.course is not None)
+    unenrolled_students = student_count - enrolled_students
     active_students = sum(1 for s in students if s.is_active)
+    inactive_students = student_count - active_students
     active_teachers = sum(1 for t in teachers if t.is_active)
+    inactive_teachers = teacher_count - active_teachers
     
-    # Recent users (last 7 days)
-    week_ago = timezone.now() - timedelta(days=7)
+    # Recent users
     new_students_week = sum(1 for s in students if s.date_joined >= week_ago)
     new_teachers_week = sum(1 for t in teachers if t.date_joined >= week_ago)
+    new_students_month = sum(1 for s in students if s.date_joined >= month_ago)
+    new_teachers_month = sum(1 for t in teachers if t.date_joined >= month_ago)
+    
+    # Students with/without profile pictures
+    students_with_photos = sum(1 for s in students if s.profile_picture)
+    teachers_with_photos = sum(1 for t in teachers if t.profile_picture)
+    
+    # Calculate percentage of students with photos
+    students_with_photos_percentage = round((students_with_photos / student_count * 100) if student_count > 0 else 0, 1)
+    
+    # Recent students list
+    recent_students = sorted(students, key=lambda x: x.date_joined, reverse=True)[:5]
+    recent_teachers = sorted(teachers, key=lambda x: x.date_joined, reverse=True)[:3]
 
     context.update({
         'total': total_users,
@@ -471,23 +490,57 @@ def dashboard_view(request):
         'student_count': student_count,
         'teachers': teachers,
         'students': students,
-        'enrolled_students': enrolled_students,
+        'enrolled_students_count': enrolled_students,
+        'enrolled_students': enrolled_students,  # Keep for backward compatibility
+        'unenrolled_students': unenrolled_students,
         'active_students': active_students,
-        'active_teachers': active_teachers,
+        'inactive_students': inactive_students,
+        'active_teachers_count': active_teachers,
+        'active_teachers': active_teachers,  # Keep for backward compatibility
+        'inactive_teachers': inactive_teachers,
         'new_students_week': new_students_week,
         'new_teachers_week': new_teachers_week,
+        'new_students_month': new_students_month,
+        'new_teachers_month': new_teachers_month,
+        'students_with_photos': students_with_photos,
+        'students_with_photos_percentage': students_with_photos_percentage,
+        'teachers_with_photos': teachers_with_photos,
+        'recent_students': recent_students,
+        'recent_teachers': recent_teachers,
+        'enrollment_rate': round((enrolled_students / student_count * 100) if student_count > 0 else 0, 1),
     })
 
     # === 2. Courses ===
-    extra_activities = models.Course.objects.prefetch_related('participants').annotate(
-        participant_count=Count('participants')
+    extra_activities = models.Course.objects.prefetch_related('enrolled_students').annotate(
+        participant_count=Count('enrolled_students')
     ).order_by('-created_at')
     
     # Course statistics
     total_courses = extra_activities.count()
     free_courses = extra_activities.filter(cost=0).count()
     paid_courses = total_courses - free_courses
-    total_enrollments = sum(course.participant_count for course in extra_activities)
+    
+    # Calculate actual enrollments using enrolled_students relationship
+    total_course_enrollments = sum(course.participant_count for course in extra_activities)
+    
+    # Course revenue statistics
+    course_revenue_stats = models.Course.objects.aggregate(
+        total_potential=Sum('cost'),
+        avg_cost=Avg('cost'),
+        max_cost=Max('cost'),
+        min_paid_cost=Min('cost', filter=Q(cost__gt=0))
+    )
+    
+    # Ongoing vs upcoming vs past courses
+    ongoing_courses = [c for c in extra_activities if c.start_time <= now <= c.end_time]
+    upcoming_courses = [c for c in extra_activities if c.start_time > now]
+    past_courses = [c for c in extra_activities if c.end_time < now]
+    
+    # Popular courses (most enrolled)
+    popular_courses = sorted(extra_activities, key=lambda x: x.participant_count, reverse=True)[:5]
+    
+    # Recent courses
+    recent_courses = list(extra_activities.filter(created_at__gte=week_ago))
     
     context.update({
         'extra_activities': extra_activities,
@@ -495,19 +548,46 @@ def dashboard_view(request):
         'limited_activities': extra_activities[:3],
         'free_courses': free_courses,
         'paid_courses': paid_courses,
-        'total_enrollments': total_enrollments,
+        'total_enrollments': total_course_enrollments,
+        'ongoing_courses_count': len(ongoing_courses),
+        'upcoming_courses_count': len(upcoming_courses),
+        'past_courses_count': len(past_courses),
+        'popular_courses': popular_courses,
+        'recent_courses_count': len(recent_courses),
+        'avg_course_cost': round(course_revenue_stats['avg_cost'] or 0, 2),
+        'max_course_cost': course_revenue_stats['max_cost'] or 0,
     })
 
     # === 3. Academic Levels ===
-    levels = models.AcademicLevel.objects.prefetch_related('subjects', 'streams').all().order_by('-pk')
+    levels = models.AcademicLevel.objects.prefetch_related('subjects', 'streams').all().order_by('order')
     limited_levels = levels[:3]
     
     # Level statistics
     total_capacity = sum(level.capacity for level in levels if level.capacity)
     students_by_level = {}
+    level_details = []
+    
     for level in levels:
         level_students = sum(1 for s in students if s.academic_level == level)
         students_by_level[level.id] = level_students
+        
+        # Level utilization
+        if level.capacity:
+            utilization = round((level_students / level.capacity * 100), 1)
+        else:
+            utilization = 0
+            
+        level_details.append({
+            'level': level,
+            'student_count': level_students,
+            'utilization': utilization,
+            'subject_count': level.subjects.count(),
+            'stream_count': level.streams.count() if level.allows_streams else 0,
+        })
+    
+    # Most populated levels
+    most_populated_levels = sorted(level_details, key=lambda x: x['student_count'], reverse=True)[:3]
+    levels_with_streams = sum(1 for l in levels if l.allows_streams)
     
     context.update({
         'levels': levels,
@@ -515,14 +595,36 @@ def dashboard_view(request):
         'limited_levels': limited_levels,
         'total_capacity': total_capacity,
         'students_by_level': students_by_level,
+        'level_details': level_details,
+        'most_populated_levels': most_populated_levels,
+        'levels_with_streams': levels_with_streams,
+        'capacity_utilization': round((student_count / total_capacity * 100) if total_capacity > 0 else 0, 1),
     })
 
     # === 4. Subjects ===
     subjects = models.Subject.objects.select_related('levels').prefetch_related('streams').all()
+    
+    # Subject statistics
+    subjects_with_videos = models.Subject.objects.annotate(
+        video_count=Count('videos')
+    ).filter(video_count__gt=0).count()
+    
+    subjects_with_classes = models.Subject.objects.annotate(
+        class_count=Count('live_classes')
+    ).filter(class_count__gt=0).count()
+    
+    # Subjects by level distribution
+    subjects_by_level_count = {}
+    for level in levels:
+        subjects_by_level_count[level.name] = subjects.filter(levels=level).count()
+    
     context.update({
         'subjects': subjects,
         'subject_count': subjects.count(),
         'limited_subjects': subjects[:3],
+        'subjects_with_videos': subjects_with_videos,
+        'subjects_with_classes': subjects_with_classes,
+        'subjects_by_level_count': subjects_by_level_count,
     })
 
     # === 5. Videos ===
@@ -530,30 +632,78 @@ def dashboard_view(request):
     
     # Video statistics
     total_videos = videos.count()
-    free_videos = videos.filter(cost=0).count()
+    free_videos_count = videos.filter(cost=0).count()
+    paid_videos = total_videos - free_videos_count
     
-    context.update({
-        'videos': videos,
-        'video_count': total_videos,
-        'limited_videos': videos[:3],
-        'free_videos': free_videos,
-    })
+    # Video revenue statistics
+    video_revenue_stats = videos.aggregate(
+        total_potential=Sum('cost'),
+        avg_cost=Avg('cost')
+    )
     
     # === 6. Live Classes ===
     live_classes = models.LiveClass.objects.select_related('subject', 'hosts', 'level', 'course').order_by('start_time')
-    now = timezone.now()
     
     # Live class statistics
-    upcoming_classes = [lc for lc in live_classes if lc.start_time > now]
-    live_now = [lc for lc in live_classes if lc.is_live()]
+    all_classes_list = list(live_classes)
+    upcoming_classes = [lc for lc in all_classes_list if lc.start_time > now]
+    past_classes = [lc for lc in all_classes_list if lc.end_time < now]
+    live_now = [lc for lc in all_classes_list if lc.is_live()]
+    recorded_classes = [lc for lc in all_classes_list if lc.is_recorded]
+    
+    # Classes this week/month
+    classes_this_week = [lc for lc in all_classes_list if week_ago <= lc.start_time <= now]
+    classes_this_month = [lc for lc in all_classes_list if month_ago <= lc.start_time <= now]
+    
+    # Classes by teacher (top hosts)
+    classes_by_teacher = {}
+    for lc in all_classes_list:
+        if lc.hosts:
+            teacher_name = lc.hosts.get_full_name() or lc.hosts.username
+            classes_by_teacher[teacher_name] = classes_by_teacher.get(teacher_name, 0) + 1
+    
+    top_class_hosts = sorted(classes_by_teacher.items(), key=lambda x: x[1], reverse=True)[:5]
     
     context.update({
         'live_classes': live_classes,
         'live_class_count': live_classes.count(),
         'upcoming_classes': upcoming_classes[:5],
+        'upcoming_classes_count': len(upcoming_classes),
         'live_now_count': len(live_now),
+        'live_now': live_now,
+        'past_classes_count': len(past_classes),
+        'recorded_classes_count': len(recorded_classes),
+        'classes_this_week_count': len(classes_this_week),
+        'classes_this_month_count': len(classes_this_month),
+        'top_class_hosts': top_class_hosts,
     })
     
+    # Recent videos
+    recent_videos = list(videos.filter(uploaded_at__gte=week_ago))
+    videos_this_month = list(videos.filter(uploaded_at__gte=month_ago))
+    
+    # Videos by teacher (top contributors)
+    video_by_teacher = {}
+    for video in videos:
+        if video.teacher:
+            teacher_name = video.teacher.get_full_name() or video.teacher.username
+            video_by_teacher[teacher_name] = video_by_teacher.get(teacher_name, 0) + 1
+    
+    top_video_contributors = sorted(video_by_teacher.items(), key=lambda x: x[1], reverse=True)[:5]
+    
+    context.update({
+        'videos': videos,
+        'video_count': total_videos,
+        'limited_videos': videos[:3],
+        'free_videos_count': free_videos_count,
+        'free_videos': free_videos_count,  # Keep for backward compatibility
+        'paid_videos': paid_videos,
+        'recent_videos_count': len(recent_videos),
+        'videos_this_month_count': len(videos_this_month),
+        'avg_video_cost': round(video_revenue_stats['avg_cost'] or 0, 2),
+        'top_video_contributors': top_video_contributors,
+    })
+
     # === 7. Streams ===
     streams = models.Stream.objects.select_related('level').annotate(
         subject_count=Count('subjects')
@@ -564,17 +714,74 @@ def dashboard_view(request):
         'stream_count': streams.count(),
     })
     
-    # === 8. Payment Verifications ===
-    payments = models.PaymentVerification.objects.select_related('user', 'course', 'payment_method').all()
-    pending_payments = payments.filter(verified=False).count()
-    verified_payments = payments.filter(verified=True).count()
-    total_revenue = sum(p.amount for p in payments.filter(verified=True))
+    # === 8. Payment Methods ===
+    payment_methods = models.PaymentMethod.objects.all()
+    active_payment_methods = payment_methods.filter(is_active=True).count()
+    
+    context.update({
+        'payment_methods_count': payment_methods.count(),
+        'active_payment_methods': active_payment_methods,
+    })
+    
+    # === 9. Payment Verifications ===
+    payments = models.PaymentVerification.objects.select_related('user', 'course', 'payment_method', 'verified_by').all()
+    all_payments_list = list(payments)
+    
+    pending_payments = [p for p in all_payments_list if not p.verified]
+    verified_payments = [p for p in all_payments_list if p.verified]
+    
+    # Revenue statistics
+    total_revenue = sum(p.amount for p in verified_payments)
+    pending_revenue = sum(p.amount for p in pending_payments)
+    
+    # Recent payments
+    recent_payments = sorted(all_payments_list, key=lambda x: x.created_at, reverse=True)[:5]
+    payments_this_week = [p for p in all_payments_list if p.created_at >= week_ago]
+    payments_this_month = [p for p in all_payments_list if p.created_at >= month_ago]
+    
+    # Payment method distribution
+    payments_by_method = {}
+    for p in verified_payments:
+        method_name = p.payment_method.name
+        payments_by_method[method_name] = payments_by_method.get(method_name, 0) + 1
+    
+    most_used_payment_methods = sorted(payments_by_method.items(), key=lambda x: x[1], reverse=True)[:3]
+    
+    # Average payment amount
+    avg_payment = round(total_revenue / len(verified_payments), 2) if verified_payments else 0
     
     context.update({
         'total_payments': payments.count(),
-        'pending_payments': pending_payments,
-        'verified_payments': verified_payments,
-        'total_revenue': total_revenue,
+        'pending_payments_count': len(pending_payments),
+        'verified_payments_count': len(verified_payments),
+        'total_revenue': round(total_revenue, 2),
+        'pending_revenue': round(pending_revenue, 2),
+        'recent_payments': recent_payments,
+        'payments_this_week_count': len(payments_this_week),
+        'payments_this_month_count': len(payments_this_month),
+        'most_used_payment_methods': most_used_payment_methods,
+        'avg_payment': avg_payment,
+        'verification_rate': round((len(verified_payments) / len(all_payments_list) * 100) if all_payments_list else 0, 1),
+    })
+    
+    # === 10. Overall System Health ===
+    total_content_items = total_courses + total_videos + live_classes.count()
+    total_academic_resources = subjects.count() + levels.count() + streams.count()
+    data_completeness = round((
+        (students_with_photos + teachers_with_photos) / (student_count + teacher_count) * 100
+    ) if (student_count + teacher_count) > 0 else 0, 1)
+    
+    context.update({
+        'total_content_items': total_content_items,
+        'total_users': total_users,
+        'total_academic_resources': total_academic_resources,
+        'data_completeness': data_completeness,
+        'system_health': {
+            'total_content_items': total_content_items,
+            'total_users': total_users,
+            'total_academic_resources': total_academic_resources,
+            'data_completeness': data_completeness,
+        }
     })
 
     return render(request, 'dashboard/index.html', context)
@@ -585,28 +792,6 @@ def dashboard_view(request):
 
 
 
-
-# ============================================
-# AUTHENTICATION VIEWS
-# ============================================
-
-
-
-
-
-# def sign_up(request):
-#     if request.method == 'POST':
-#         form = UserSignUpForm(request.POST, request.FILES)
-#         if form.is_valid():
-#             form.save()
-#             messages.success(request, "Account created successfully! You can now log in.")
-#             return redirect('dashboard:login')
-#         else:
-#             messages.error(request, "Please correct the errors below.")
-#     else:
-#         form = UserSignUpForm()
-
-#     return render(request, 'dashboard/signup.html', {'form': form})
 
 def login_view(request):
     if request.method == 'POST':
@@ -643,20 +828,6 @@ def logout_view(request):
 
 
 
-
-
-
-# ============================================
-# all curd operations for course, user, academic level, stream, subject, enrollment, live class, extra curricular activity, video etc
-# ============================================
-
-
-
-# ============================================
-# USER VIEWS
-# ============================================
-
-
 @login_required
 def user_detail(request, pk):
     user = get_object_or_404(models.User, pk=pk)
@@ -680,23 +851,7 @@ def user_detail(request, pk):
     return render(request, 'dashboard/detailed.html', context)
 
 
-# if user is created, it will call add_user view from Course app views.py
 
-# @login_required
-# def user_create(request):
-#     if request.method == 'POST':
-#         form = UserCreateForm(request.POST, request.FILES)
-#         if form.is_valid():
-#             user = form.save()
-#             messages.success(request, f'User "{user.username}" created successfully!')
-#             return redirect('dashboard:user_detail', pk=user.pk)
-#         else:
-#             messages.error(request, 'Please correct the errors below.')
-#     else:
-#         form = UserCreateForm()
-    
-#     context = {'form': form, 'item_name': 'User'}
-#     return render(request, 'dashboard/add_item.html', context)
 
 @login_required
 def user_delete(request, pk):
@@ -713,14 +868,6 @@ def user_delete(request, pk):
     return redirect('dashboard:user_detail', pk=pk)
 
 
-# ============================================
-# ACADEMIC LEVEL VIEWS
-# ============================================
-# @login_required
-# def level_list(request):
-#     levels = AcademicLevel.objects.all()
-#     context = {'levels': levels, 'item_name': 'Academic Level'}
-#     return render(request, 'dashboard/level_list.html', context)
 
 @login_required
 def level_detail(request, pk):
@@ -744,21 +891,7 @@ def level_detail(request, pk):
     }
     return render(request, 'dashboard/detailed.html', context)
 
-# @login_required
-# def level_create(request):
-#     if request.method == 'POST':
-#         form = AcademicLevelForm(request.POST)
-#         if form.is_valid():
-#             level = form.save()
-#             messages.success(request, f'Level "{level.name}" created successfully!')
-#             return redirect('dashboard:level_detail', pk=level.pk)
-#         else:
-#             messages.error(request, 'Please correct the errors below.')
-#     else:
-#         form = AcademicLevelForm()
-    
-#     context = {'form': form, 'item_name': 'Academic Level'}
-#     return render(request, 'dashboard/add_item.html', context)
+
 
 @login_required
 def level_delete(request, pk):
@@ -771,14 +904,7 @@ def level_delete(request, pk):
     return redirect('dashboard:level_detail', pk=pk)
 
 
-# ============================================
-# STREAM VIEWS
-# ============================================
-# @login_required
-# def stream_list(request):
-#     streams = Stream.objects.all()
-#     context = {'streams': streams, 'item_name': 'Stream'}
-#     return render(request, 'dashboard/stream_list.html', context)
+
 
 @login_required
 def stream_detail(request, pk):
@@ -802,21 +928,8 @@ def stream_detail(request, pk):
     }
     return render(request, 'dashboard/detailed.html', context)
 
-# @login_required
-# def stream_create(request):
-#     if request.method == 'POST':
-#         form = StreamForm(request.POST)
-#         if form.is_valid():
-#             stream = form.save()
-#             messages.success(request, f'Stream "{stream.name}" created successfully!')
-#             return redirect('dashboard:stream_detail', pk=stream.pk)
-#         else:
-#             messages.error(request, 'Please correct the errors below.')
-#     else:
-#         form = StreamForm()
-    
-#     context = {'form': form, 'item_name': 'Stream'}
-#     return render(request, 'dashboard/add_item.html', context)
+
+
 
 @login_required
 def stream_delete(request, pk):
@@ -829,14 +942,7 @@ def stream_delete(request, pk):
     return redirect('dashboard:stream_detail', pk=pk)
 
 
-# ============================================
-# SUBJECT VIEWS
-# ============================================
-# @login_required
-# def subject_list(request):
-#     subjects = Subject.objects.all()
-#     context = {'subjects': subjects, 'item_name': 'Subject'}
-#     return render(request, 'dashboard/subject_list.html', context)
+
 
 @login_required
 def subject_detail(request, pk):
@@ -860,21 +966,8 @@ def subject_detail(request, pk):
     }
     return render(request, 'dashboard/detailed.html', context)
 
-# @login_required
-# def subject_create(request):
-#     if request.method == 'POST':
-#         form = SubjectForm(request.POST)
-#         if form.is_valid():
-#             subject = form.save()
-#             messages.success(request, f'Subject "{subject.name}" created successfully!')
-#             return redirect('dashboard:subject_detail', pk=subject.pk)
-#         else:
-#             messages.error(request, 'Please correct the errors below.')
-#     else:
-#         form = SubjectForm()
-    
-#     context = {'form': form, 'item_name': 'Subject'}
-#     return render(request, 'dashboard/add_item.html', context)
+
+
 
 @login_required
 def subject_delete(request, pk):
@@ -887,14 +980,7 @@ def subject_delete(request, pk):
     return redirect('dashboard:subject_detail', pk=pk)
 
 
-# ============================================
-# ENROLLMENT VIEWS
-# ============================================
-# @login_required
-# def enrollment_list(request):
-#     enrollments = Enrollment.objects.all().select_related('student', 'level')
-#     context = {'enrollments': enrollments, 'item_name': 'Enrollment'}
-#     return render(request, 'dashboard/enrollment_list.html', context)
+
 
 @login_required
 def enrollment_detail(request, pk):
@@ -914,15 +1000,6 @@ def enrollment_delete(request, pk):
         return redirect('dashboard:enrollment_home')
     return redirect('dashboard:user_detail', pk=pk)
 
-
-# ============================================
-# LIVE CLASS VIEWS
-# ============================================
-@login_required
-# def liveclass_list(request):
-#     live_classes = LiveClass.objects.all()
-#     context = {'live_classes': live_classes, 'item_name': 'Live Class'}
-#     return render(request, 'dashboard/liveclass_list.html', context)
 
 @login_required
 def liveclass_detail(request, pk):
@@ -946,21 +1023,7 @@ def liveclass_detail(request, pk):
     }
     return render(request, 'dashboard/detailed.html', context)
 
-# @login_required
-# def liveclass_create(request):
-#     if request.method == 'POST':
-#         form = LiveClassForm(request.POST)
-#         if form.is_valid():
-#             live_class = form.save()
-#             messages.success(request, f'Live Class "{live_class.title}" created successfully!')
-#             return redirect('dashboard:liveclass_detail', pk=live_class.pk)
-#         else:
-#             messages.error(request, 'Please correct the errors below.')
-#     else:
-#         form = LiveClassForm()
-    
-#     context = {'form': form, 'item_name': 'Live Class'}
-#     return render(request, 'dashboard/add_item.html', context)
+
 
 @login_required
 def liveclass_delete(request, pk):
@@ -973,14 +1036,7 @@ def liveclass_delete(request, pk):
     return redirect('dashboard:liveclass_detail', pk=pk)
 
 
-# ============================================
-# EXTRA CURRICULAR ACTIVITY VIEWS
-# ============================================
-# @login_required
-# def activity_list(request):
-#     activities = ExtraCurricularActivity.objects.all()
-#     context = {'activities': activities, 'item_name': 'Activity'}
-#     return render(request, 'dashboard/activity_list.html', context)
+
 @login_required
 def activity_detail(request, pk):
     activity = get_object_or_404(models.Course.objects.prefetch_related('enrolled_students'), pk=pk)
@@ -1009,21 +1065,7 @@ def activity_detail(request, pk):
     }
     return render(request, 'dashboard/detailed.html', context)
 
-# @login_required
-# def activity_create(request):
-#     if request.method == 'POST':
-#         form = ExtraCurricularActivityForm(request.POST, request.FILES)
-#         if form.is_valid():
-#             activity = form.save()
-#             messages.success(request, f'Activity "{activity.title}" created successfully!')
-#             return redirect('dashboard:activity_detail', pk=activity.pk)
-#         else:
-#             messages.error(request, 'Please correct the errors below.')
-#     else:
-#         form = ExtraCurricularActivityForm()
-    
-#     context = {'form': form, 'item_name': 'Activity'}
-#     return render(request, 'dashboard/add_item.html', context)
+
 
 @login_required
 def activity_delete(request, pk):
@@ -1035,15 +1077,6 @@ def activity_delete(request, pk):
         return redirect('dashboard:course_home')
     return redirect('dashboard:activity_detail', pk=pk)
 
-
-# ============================================
-# VIDEO VIEWS
-# ============================================
-# @login_required
-# def video_list(request):
-#     videos = Video.objects.all()
-#     context = {'videos': videos, 'item_name': 'Video'}
-#     return render(request, 'dashboard/video_list.html', context)
 
 @login_required
 def video_detail(request, pk):
@@ -1067,21 +1100,7 @@ def video_detail(request, pk):
     }
     return render(request, 'dashboard/detailed.html', context)
 
-# @login_required
-# def video_create(request):
-#     if request.method == 'POST':
-#         form = VideoForm(request.POST, request.FILES)
-#         if form.is_valid():
-#             video = form.save()
-#             messages.success(request, f'Video "{video.title}" created successfully!')
-#             return redirect('dashboard:video_detail', pk=video.pk)
-#         else:
-#             messages.error(request, 'Please correct the errors below.')
-#     else:
-#         form = VideoForm()
-    
-#     context = {'form': form, 'item_name': 'Video'}
-#     return render(request, 'dashboard/add_item.html', context)
+
 
 @login_required
 def video_delete(request, pk):

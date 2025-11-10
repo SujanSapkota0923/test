@@ -231,7 +231,7 @@
                   <tr>
                     <td>{{ course.title }}</td>
                     <td>{{ course.description|truncatewords:10 }}</td>
-                    <td>${{ course.cost }}</td>
+                    <td>Rs. {{ course.cost }}</td>
                     <td>{{ course.start_time|date:"M d, Y" }}</td>
                     <td>
                       <a href="{% url 'dashboard:activity_detail' course.pk %}" class="btn btn-sm btn-warning">
@@ -593,7 +593,7 @@
                       <small class="text-muted">@{{ verification.user.username }}</small>
                     </td>
                     <td>{{ verification.course.title|truncatewords:5 }}</td>
-                    <td><strong>${{ verification.amount }}</strong></td>
+                    <td><strong>Rs. {{ verification.amount }}</strong></td>
                     <td><span class="badge bg-info">{{ verification.payment_method.name }}</span></td>
                     <td>
                       {% if verification.transaction_id %}

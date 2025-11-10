@@ -55,7 +55,7 @@
                                             <td>
                                                 <span class="badge bg-info">{{ payment.payment_method.name }}</span>
                                             </td>
-                                            <td><strong>${{ payment.amount }}</strong></td>
+                                            <td><strong>Rs. {{ payment.amount }}</strong></td>
                                             <td>{{ payment.created_at|date:"M d, Y H:i" }}</td>
                                             <td>
                                                 <a href="{% url 'dashboard:verify_payment' payment.pk %}" class="btn btn-sm btn-success">
@@ -108,7 +108,7 @@
                                                 <small class="text-muted">@{{ payment.user.username }}</small>
                                             </td>
                                             <td>{{ payment.course.title }}</td>
-                                            <td><strong>${{ payment.amount }}</strong></td>
+                                            <td><strong>Rs. {{ payment.amount }}</strong></td>
                                             <td>{{ payment.verified_by.username|default:"N/A" }}</td>
                                             <td>{{ payment.verified_at|date:"M d, Y H:i" }}</td>
                                             <td>
