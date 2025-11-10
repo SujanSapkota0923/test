@@ -14,7 +14,6 @@ from apps.Course.models import (
     AcademicLevel,
     Stream,
     Subject,
-    Enrollment,
     Course,
     LiveClass,
     Video,
@@ -148,6 +147,8 @@ class Command(BaseCommand):
                 defaults={
                     "email": email,
                     "role": User.Role.TEACHER,
+                    "first_name": fake.first_name(),
+                    "last_name": fake.last_name(),
                 },
             )
             if created:
@@ -168,6 +169,8 @@ class Command(BaseCommand):
                 defaults={
                     "email": email,
                     "role": User.Role.STUDENT,
+                    "first_name": fake.first_name(),
+                    "last_name": fake.last_name(),
                 },
             )
             if created:
@@ -178,7 +181,7 @@ class Command(BaseCommand):
                 student.save()
             students.append(student)
 
-        # Enroll students into random levels (active enrollment)
+        # Assign academic levels to students
         for student in students:
             # pick a level that has capacity (or unlimited capacity)
             available_levels = []
@@ -186,42 +189,21 @@ class Command(BaseCommand):
                 if l.capacity is None:
                     available_levels.append(l)
                 else:
-                    current_active = Enrollment.objects.filter(level=l, is_active=True).count()
-                    if current_active < l.capacity:
+                    current_enrolled = l.students.count()
+                    if current_enrolled < l.capacity:
                         available_levels.append(l)
 
             if available_levels:
                 level = random.choice(available_levels)
-                is_active = True
             else:
-                # no level has free capacity; pick any level but mark enrollment inactive
+                # no level has free capacity; pick any level anyway
                 level = random.choice(levels)
-                is_active = False
 
             try:
-                enrollment, created = Enrollment.objects.get_or_create(
-                    student=student,
-                    level=level,
-                    defaults={"is_active": is_active, "joined_at": timezone.now()},
-                )
+                student.academic_level = level
+                student.save()
             except Exception:
-                # fallback: try to create an inactive enrollment or skip
-                try:
-                    enrollment, created = Enrollment.objects.get_or_create(
-                        student=student,
-                        level=level,
-                        defaults={"is_active": False, "joined_at": timezone.now()},
-                    )
-                except Exception:
-                    continue
-
-            if not created and is_active and not enrollment.is_active:
-                # try to activate if possible
-                try:
-                    enrollment.is_active = True
-                    enrollment.save()
-                except Exception:
-                    pass
+                pass
 
         # Courses (previously ExtraCurricularActivity)
         activities = []
@@ -243,6 +225,18 @@ class Command(BaseCommand):
                 participants = random.sample(students, k=min(len(students), random.randint(0, 5)))
                 activity.participants.set(participants)
             activities.append(activity)
+        
+        # Assign courses to some students (enroll them)
+        # Leave some students without courses for the enrollment list
+        if activities and students:
+            # Enroll about 70% of students into random courses
+            students_to_enroll = random.sample(students, k=int(len(students) * 0.7))
+            for student in students_to_enroll:
+                try:
+                    student.course = random.choice(activities)
+                    student.save()
+                except Exception:
+                    pass
 
         # Videos
         for i in range(videos_count):
@@ -285,7 +279,6 @@ class Command(BaseCommand):
                 "AcademicLevel": AcademicLevel,
                 "Stream": Stream,
                 "Subject": Subject,
-                "Enrollment": Enrollment,
                 "Course": Course,
                 "LiveClass": LiveClass,
                 "Video": Video,

@@ -23,7 +23,7 @@ class UserLoginForm(forms.Form):
     password = forms.CharField(widget=forms.PasswordInput(attrs={'placeholder': 'Password'}))
 
 
-from apps.Course.models import AcademicLevel, Stream, Subject, Enrollment, LiveClass, Course, Video, User
+from apps.Course.models import AcademicLevel, Stream, Subject, LiveClass, Course, Video, User, PaymentMethod, PaymentVerification
 
 # ============================================
 # USER FORMS
@@ -32,7 +32,7 @@ class UserForm(forms.ModelForm):
     class Meta:
         model = User
         fields = ['username', 'first_name', 'last_name', 'email', 'role', 'phone', 
-                  'bio', 'profile_picture', 'academic_level']
+                  'bio', 'profile_picture', 'course', 'academic_level']
         labels = {
             'academic_level': 'Class',
         }
@@ -45,6 +45,7 @@ class UserForm(forms.ModelForm):
             'phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '+977-9876543210'}),
             'bio': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'profile_picture': forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/*'}),
+            'course': forms.Select(attrs={'class': 'form-select'}),
             'academic_level': forms.Select(attrs={'class': 'form-select'}),
         }
         help_texts = {
@@ -155,25 +156,25 @@ class SubjectForm(forms.ModelForm):
 # ============================================
 # ENROLLMENT FORM
 # ============================================
-class EnrollmentForm(forms.ModelForm):
+# class EnrollmentForm(forms.ModelForm):
     
-    class Meta:
-        model = Enrollment
-        fields = ['student', 'level', 'joined_at', 'is_active']
-        labels = {
-            'level': 'Class', 
-        }
-        widgets = {
-            'student': forms.Select(attrs={'class': 'form-select'}),
-            'level': forms.Select(attrs={'class': 'form-select'}),
-            'joined_at': forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}),
-            'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-        }
+#     class Meta:
+#         model = Enrollment
+#         fields = ['student', 'level', 'joined_at', 'is_active']
+#         labels = {
+#             'level': 'Class', 
+#         }
+#         widgets = {
+#             'student': forms.Select(attrs={'class': 'form-select'}),
+#             'level': forms.Select(attrs={'class': 'form-select'}),
+#             'joined_at': forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}),
+#             'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+#         }
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # Only show students
-        self.fields['student'].queryset = User.objects.filter(role=User.Role.STUDENT)
+#     def __init__(self, *args, **kwargs):
+#         super().__init__(*args, **kwargs)
+#         # Only show students
+#         self.fields['student'].queryset = User.objects.filter(role=User.Role.STUDENT)
 
 
 # ============================================
@@ -227,7 +228,7 @@ class CourseForm(forms.ModelForm):
     
     class Meta:
         model = Course
-        fields = ['title', 'description', 'cost', 'start_time', 'end_time', 'image', 'participants']
+        fields = ['title', 'description', 'cost', 'start_time', 'end_time', 'image']
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., Annual Sports Day'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
@@ -235,7 +236,7 @@ class CourseForm(forms.ModelForm):
             'start_time': forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}),
             'end_time': forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}),
             'image': forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/*'}),
-            'participants': forms.SelectMultiple(attrs={'class': 'form-select', 'size': '8'}),
+            # 'participants': forms.SelectMultiple(attrs={'class': 'form-select', 'size': '8'}),
         }
         help_texts = {
             'participants': 'Hold Ctrl/Cmd to select multiple participants (optional)'
@@ -313,4 +314,60 @@ VideoFormSet = inlineformset_factory(
         'image': forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/*'}),
     }
 )
+
+
+# ============================================
+# PAYMENT METHOD FORM
+# ============================================
+class PaymentMethodForm(forms.ModelForm):
+    class Meta:
+        model = PaymentMethod
+        fields = ['name', 'description', 'details', 'image', 'is_active', 'display_order']
+        widgets = {
+            'name': forms.TextInput(attrs={
+                'class': 'form-control', 
+                'placeholder': 'e.g., Bank Transfer, Khalti, eSewa, PayPal'
+            }),
+            'description': forms.Textarea(attrs={
+                'class': 'form-control', 
+                'rows': 4, 
+                'placeholder': 'Enter instructions for using this payment method...'
+            }),
+            'details': forms.Textarea(attrs={
+                'class': 'form-control', 
+                'rows': 5,
+                'placeholder': 'Enter JSON format details:\n{\n  "account_number": "1234567890",\n  "account_name": "School Name",\n  "bank": "Example Bank"\n}'
+            }),
+            'image': forms.FileInput(attrs={
+                'class': 'form-control',
+                'accept': 'image/*'
+            }),
+            'is_active': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            }),
+            'display_order': forms.NumberInput(attrs={
+                'class': 'form-control', 
+                'min': 0,
+                'placeholder': '0'
+            }),
+        }
+        help_texts = {
+            'name': 'The display name of the payment method',
+            'description': 'Instructions for students on how to use this payment method',
+            'details': 'Optional JSON data containing account info, QR code paths, etc.',
+            'display_order': 'Lower numbers appear first in the list (0 = highest priority)',
+            'is_active': 'Uncheck to temporarily disable this payment method',
+        }
+    
+    def clean_details(self):
+        """Validate JSON field"""
+        import json
+        details = self.cleaned_data.get('details')
+        if details:
+            try:
+                if isinstance(details, str):
+                    json.loads(details)
+            except json.JSONDecodeError:
+                raise forms.ValidationError('Invalid JSON format. Please use valid JSON syntax like: {"key": "value"}')
+        return details
 

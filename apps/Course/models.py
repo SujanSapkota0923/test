@@ -23,6 +23,20 @@ class User(AbstractUser):
         null=True,
         related_name='students'
     )
+    course = models.ForeignKey(
+        'Course',
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='enrolled_students',
+        help_text='The course this user is enrolled in'
+    )
+
+    @property
+    def enrolled(self):
+        """Returns True if user has a course assigned, False otherwise"""
+        return self.course is not None
+
     def save(self, *args, **kwargs):
         if self.is_superuser and not self.role:
             self.role = self.Role.ADMIN
@@ -60,16 +74,6 @@ class User(AbstractUser):
         if self.is_student:
             return f"{self.username} (Student)"
         return f"{self.username}"
-
-    def get_current_enrollment(self):
-        """Get the student's current active enrollment"""
-        try:
-            return self.enrollments.get(is_active=True)
-        except Enrollment.DoesNotExist:
-            return None
-        except Enrollment.MultipleObjectsReturned:
-            # Should not happen with validation, but handle it
-            return self.enrollments.filter(is_active=True).first()
         
 
 
@@ -94,7 +98,7 @@ class AcademicLevel(models.Model): # for representing grades/years 1 for class o
     def capacity_remaining(self):
         if self.capacity is None:
             return "Not set"  # Unlimited capacity
-        enrolled_count = self.enrollments.filter(is_active=True).count()
+        enrolled_count = self.students.count()
         return self.capacity - enrolled_count
 
     def __str__(self):
@@ -138,96 +142,6 @@ class Subject(models.Model):
     
     def __str__(self):
         return self.name
-
-
-class Enrollment(models.Model):
-    student = models.ForeignKey(settings.AUTH_USER_MODEL, related_name="enrollments", on_delete=models.CASCADE, limit_choices_to={"role": User.Role.STUDENT})
-    level = models.ForeignKey(AcademicLevel, related_name="enrollments", on_delete=models.CASCADE, blank=True, null=True)
-    # Optional: enrollment can be tied to a Course instead of (or in addition to) a level
-    course = models.ForeignKey('Course', related_name='enrollments', on_delete=models.CASCADE, blank=True, null=True)
-    joined_at = models.DateTimeField(default=timezone.now)
-    left_at = models.DateTimeField(blank=True, null=True)
-    is_active = models.BooleanField(default=False)  # if false, student unenrolled/left
-
-    # class Meta:
-    #     unique_together = ("student", "level")
-    
-    def __str__(self):
-        return f"{self.student.username}"
-
-    # stop enrolling if the capacity of the level is full and update is_active to false and update the level
-    def clean(self):
-        super().clean()
-        # Must be associated with at least a level or a course
-        if not self.level and not self.course:
-            raise ValidationError("Enrollment must have either a level or a course.")
-
-        # If activating enrollment, enforce scope-specific uniqueness and capacity rules
-        if self.is_active:
-            # If this enrollment is level-based, ensure the student has no other active level enrollment
-            if self.level:
-                existing_active_level = Enrollment.objects.filter(
-                    student=self.student,
-                    is_active=True,
-                    level__isnull=False,
-                ).exclude(pk=self.pk)
-                if existing_active_level.exists():
-                    raise ValidationError(
-                        f"{self.student.username} is already enrolled in {existing_active_level.first().level.name}. Please deactivate the current enrollment first."
-                    )
-
-                # Check capacity for level (exclude current enrollment if updating)
-                if self.level.capacity is not None:
-                    active_enrollments = Enrollment.objects.filter(
-                        level=self.level,
-                        is_active=True,
-                    ).exclude(pk=self.pk).count()
-                    if active_enrollments >= self.level.capacity:
-                        raise ValidationError(
-                            f"The level {self.level.name} has reached its capacity of {self.level.capacity} students."
-                        )
-
-            # If this enrollment is course-based, allow multiple active enrollments across different courses,
-            # but prevent duplicate active enrollment for the same course.
-            if self.course:
-                if Enrollment.objects.filter(student=self.student, is_active=True, course=self.course).exclude(pk=self.pk).exists():
-                    raise ValidationError(f"{self.student.username} is already enrolled in course {self.course.title}.")
-
-    def save(self, *args, **kwargs):
-        # Run clean validation
-        self.full_clean()
-
-        # Update student's academic_level when level-based enrollment is active
-        if self.is_active and self.level:
-            self.student.academic_level = self.level
-            self.student.save(update_fields=['academic_level'])
-
-        # Sync course participants when course-based enrollment changes
-        # We save the instance first so that m2m operations have a saved instance to reference
-        super().save(*args, **kwargs)
-
-        try:
-            if self.course:
-                if self.is_active:
-                    # add student to course participants
-                    try:
-                        self.course.participants.add(self.student)
-                    except Exception:
-                        pass
-                else:
-                    # remove student from course participants when enrollment deactivated
-                    try:
-                        self.course.participants.remove(self.student)
-                    except Exception:
-                        pass
-        except Exception:
-            # ignore any sync errors
-            pass
-
-        # If deactivating enrollment, set left_at timestamp if not already set
-        if not self.is_active and self.left_at is None:
-            self.left_at = timezone.now()
-            super().save(update_fields=['left_at'])
 
 
 # Courses (previously called ExtraCurricularActivity)
@@ -344,3 +258,128 @@ class Video(models.Model):
 
     def __str__(self):
         return self.title
+    
+class PaymentMethod(models.Model):
+    '''
+    Represents a payment method for courses or activities.
+    '''
+    name = models.CharField(max_length=100)
+    description = models.TextField(blank=True)
+    details = models.JSONField(blank=True, 
+        null=True, 
+        help_text="Optional metadata (account number, provider info, etc.)")
+    image = models.ImageField(upload_to='payment_method_images/', blank=True, null=True)
+
+    is_active = models.BooleanField(
+        default=True, 
+        help_text="Whether this payment method is currently available"
+    )
+    display_order = models.PositiveIntegerField(
+        default=0, 
+        help_text="Order in which payment methods are displayed"
+    )
+
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, 
+        on_delete=models.CASCADE, 
+        related_name="payment_methods", 
+        limit_choices_to={"role": User.Role.ADMIN}, 
+        help_text="Admin who created this payment method"
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['display_order', 'name']
+        verbose_name = 'Payment Method'
+        verbose_name_plural = 'Payment Methods'
+
+    def __str__(self):
+        return self.name
+    
+class PaymentVerification(models.Model):
+    '''
+    Represents a payment verification request when a user buys a course.
+    User uploads payment proof and admin verifies it.
+    '''
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.CASCADE, 
+        related_name="payment_verifications"
+    )
+    course = models.ForeignKey(
+        Course, 
+        on_delete=models.CASCADE, 
+        related_name="payment_verifications"
+    )
+    payment_method = models.ForeignKey(
+        PaymentMethod, 
+        on_delete=models.CASCADE, 
+        related_name="payment_verifications"
+    )
+    amount = models.DecimalField(
+        max_digits=8, 
+        decimal_places=2,
+        help_text="Amount paid by the user"
+    )
+    transaction_id = models.CharField(
+        max_length=200, 
+        blank=True, 
+        null=True,
+        help_text="Transaction ID or reference number from payment provider"
+    )
+    payment_proof = models.ImageField(
+        upload_to='payment_proofs/', 
+        blank=True, 
+        null=True,
+        help_text="Upload screenshot or proof of payment"
+    )
+    remarks = models.TextField(
+        blank=True,
+        help_text="Additional notes from user about the payment"
+    )
+    
+    # Verification status
+    verified = models.BooleanField(
+        default=False,
+        help_text="Whether payment has been verified by admin"
+    )
+    verified_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        related_name="verified_payments",
+        limit_choices_to={'role': User.Role.ADMIN},
+        help_text="Admin who verified this payment"
+    )
+    verification_notes = models.TextField(
+        blank=True,
+        help_text="Admin notes during verification"
+    )
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    verified_at = models.DateTimeField(blank=True, null=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Payment Verification'
+        verbose_name_plural = 'Payment Verifications'
+
+    def __str__(self):
+        status = "Verified" if self.verified else "Pending"
+        return f"{self.user.username} - {self.course.title} - {status}"
+    
+    def verify(self, admin_user, notes=""):
+        """Mark payment as verified"""
+        from django.utils import timezone
+        self.verified = True
+        self.verified_by = admin_user
+        self.verified_at = timezone.now()
+        self.verification_notes = notes
+        # Assign course to user
+        self.user.course = self.course
+        self.user.save()
+        self.save()

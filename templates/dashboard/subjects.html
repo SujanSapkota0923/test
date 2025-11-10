@@ -8,18 +8,14 @@
 		<div class="container-xl">
 
 			<div class="d-flex justify-content-between align-items-center mb-4">
-				<h1 class="app-page-title mb-0">Subjects</h1>
+				<h1 class="app-page-title mb-0"><i class="fas fa-book me-2"></i>Subjects</h1>
 				<div class="d-flex align-items-center gap-3">
-					<!-- <form class="table-search-form row gx-1 align-items-center">
-						<div class="col-auto">
-							<input type="text" id="search-orders" name="searchorders" class="form-control search-orders"
-								placeholder="Search">
-						</div>
-						<div class="col-auto">
-							<button type="submit" class="btn app-btn-secondary">Search</button>
-						</div>
-					</form> -->
-					<a class="btn app-btn-primary text-nowrap" href="{% url 'add_subject' %}">Create New Subject</a>
+					<div class="input-group" style="max-width: 300px;">
+						<span class="input-group-text border-0 bg-transparent"><i class="fas fa-search text-muted"></i></span>
+						<input type="text" id="subjects-search" class="form-control border-0 shadow-none" placeholder="Search subjects…" autocomplete="off" />
+						<button type="button" class="btn btn-link px-2 clear-search" hidden><i class="fas fa-times-circle text-muted"></i></button>
+					</div>
+					<a class="btn app-btn-primary text-nowrap" href="{% url 'add_subject' %}"><i class="fas fa-plus me-2"></i>Create New Subject</a>
 				</div>
 			</div>
 
@@ -28,40 +24,68 @@
 					<div class="app-card app-card-orders-table shadow-sm mb-5">
 						<div class="app-card-body">
 							<div class="table-responsive">
-								<table class="table app-table-hover mb-0 text-left">
+								<table id="subjects-table" class="table app-table-hover mb-0 text-left">
 									<thead>
 										<tr>
-											<th class="cell">ID</th>
-											<th class="cell">Name</th>
-											<th class="cell">Description</th>
-											<th class="cell">Class</th>
-											<th class="cell">Stream</th>
-											<th class="cell">Actions</th>
+											<th class="cell" style="width: 5%;">ID</th>
+											<th class="cell" style="width: 20%;">Subject Name</th>
+											<th class="cell" style="width: 30%;">Description</th>
+											<th class="cell" style="width: 12%;">Academic Level</th>
+											<th class="cell" style="width: 18%;">Streams</th>
+											<th class="cell" style="width: 15%;">Actions</th>
 										</tr>
 									</thead>
 									<tbody>
 										{% for subject in subjects %}
 										<tr>
-											<td class="cell">{{subject.id}}</td>
-											<td class="cell"><span class="truncate">{{subject.name}}</span></td>
-											<td class="cell">{{subject.description}}</td>
-											<td class="cell">{{subject.levels}}</td>
+											<td class="cell">
+												<span class="badge bg-secondary">#{{subject.id}}</span>
+											</td>
+											<td class="cell">
+												<div class="d-flex align-items-center">
+													<i class="fas fa-book text-primary me-2"></i>
+													<strong>{{subject.name}}</strong>
+												</div>
+											</td>
+											<td class="cell">
+												<small class="text-muted">
+													{% if subject.description %}
+														{{ subject.description|truncatewords:15 }}
+													{% else %}
+														<em>No description available</em>
+													{% endif %}
+												</small>
+											</td>
+											<td class="cell">
+												{% if subject.levels %}
+													<span class="badge bg-info">
+														<i class="fas fa-graduation-cap me-1"></i>
+														{{subject.levels.name}}
+													</span>
+												{% else %}
+													<span class="badge bg-secondary">Not assigned</span>
+												{% endif %}
+											</td>
 											<td class="cell">
 												{% with subject.streams.all as s_list %}
-													{% if s_list.exists %}
-														{% for stream in s_list %}
-															{{ stream.name }}{% if not forloop.last %}, {% endif %}
-														{% endfor %}
+													{% if s_list %}
+														<div class="d-flex flex-wrap gap-1">
+															{% for stream in s_list %}
+																<span class="badge bg-success">{{ stream.name }}</span>
+															{% endfor %}
+														</div>
 													{% else %}
-														None
+														<span class="badge bg-secondary">No streams</span>
 													{% endif %}
 												{% endwith %}
 											</td>
-											<td class="cell"><a class="btn btn-outline-secondary" href="{% url 'dashboard:subject_detail' subject.id %}">View</a></td>
+											<td class="cell">
+												<a class="btn btn-sm btn-outline-primary" href="{% url 'dashboard:subject_detail' subject.id %}">
+													<i class="fas fa-eye me-1"></i>View Details
+												</a>
+											</td>
 										</tr>
 										{%endfor%}
-
-
 									</tbody>
 								</table>
 							</div><!--//table-responsive-->
@@ -92,4 +116,34 @@
 
 <!-- Page Specific JS -->
 <script src="{% static 'dashboard/assets/js/app.js' %}"></script>
+
+<script>
+	// Lightweight client-side search
+	document.addEventListener('DOMContentLoaded', function() {
+		const searchInput = document.getElementById('subjects-search');
+		const clearBtn = document.querySelector('.clear-search');
+		const table = document.getElementById('subjects-table');
+
+		if (searchInput && table) {
+			searchInput.addEventListener('input', function() {
+				const query = this.value.toLowerCase().trim();
+				if (clearBtn) clearBtn.hidden = !query;
+
+				const rows = table.querySelectorAll('tbody tr');
+				rows.forEach(row => {
+					const text = row.textContent.toLowerCase();
+					row.style.display = text.includes(query) ? '' : 'none';
+				});
+			});
+
+			if (clearBtn) {
+				clearBtn.addEventListener('click', function() {
+					searchInput.value = '';
+					searchInput.dispatchEvent(new Event('input'));
+					searchInput.focus();
+				});
+			}
+		}
+	});
+</script>
 {% endblock %}

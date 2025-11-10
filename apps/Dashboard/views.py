@@ -6,7 +6,6 @@ from django.urls import reverse
 from django.db.models import Q, Count
 from apps.Course import models
 from apps.Course.models import User
-from apps.Course.forms import EnrollmentEditForm, EnrollmentModelForm
 from .forms import (
     UserForm, AcademicLevelForm, StreamForm, 
     SubjectForm, LiveClassForm, 
@@ -19,7 +18,10 @@ from .forms import (
 
 @login_required
 def course_home_view(request):
-    extra_activities = models.Course.objects.all()
+    # Optimize query with prefetch_related for enrolled_students (from User.course ForeignKey)
+    extra_activities = models.Course.objects.all().prefetch_related('enrolled_students').annotate(
+        participant_count=Count('enrolled_students')
+    ).order_by('-created_at')
     extra_activity_count = extra_activities.count()
     limited_activities = extra_activities[:3]
     context = {
@@ -31,20 +33,29 @@ def course_home_view(request):
 
 @login_required
 def class_level_view(request, level_slug):
-    level = models.AcademicLevel.objects.filter(slug=level_slug).first()
+    level = models.AcademicLevel.objects.prefetch_related('streams', 'subjects').filter(slug=level_slug).first()
     if not level:
         messages.error(request, "Academic level not found.")    
         return redirect('dashboard:index')
-    users = models.User.objects.filter(academic_level=level)
+    users = models.User.objects.filter(academic_level=level).select_related('course')
+    
+    # Get statistics
+    total_students = users.filter(role=User.Role.STUDENT).count()
+    enrolled_students = users.filter(role=User.Role.STUDENT, course__isnull=False).count()
+    
     context = {
         'level': level,
         'level_users': users,
+        'total_students': total_students,
+        'enrolled_students': enrolled_students,
+        'unenrolled_students': total_students - enrolled_students,
     }
     return render(request, 'dashboard/classes.html', context)
 
 @login_required
 def subject_list_view(request):
-    subjects = models.Subject.objects.all()
+    # Optimize query with select_related and prefetch_related
+    subjects = models.Subject.objects.select_related('levels').prefetch_related('streams').all()
     context = {
         'subjects': subjects,
         'subject_count': subjects.count(),
@@ -54,7 +65,8 @@ def subject_list_view(request):
 
 @login_required
 def student_list_view(request):
-    all_users = models.User.objects.all()
+    # Optimize query with select_related for academic_level and course
+    all_users = models.User.objects.select_related('academic_level', 'course').all()
 
     # Count users by role (single DB query)
     queryset_results = all_users.values('role').annotate(user_count=Count('role'))
@@ -68,6 +80,10 @@ def student_list_view(request):
     # Separate users in Python (no new queries)
     teachers = [user for user in all_users if user.role == User.Role.TEACHER]
     students = [user for user in all_users if user.role == User.Role.STUDENT]
+    
+    # Calculate student statistics
+    enrolled_students = sum(1 for s in students if s.course is not None)
+    active_students = sum(1 for s in students if s.is_active)
 
     context = {
         'total': total_users,
@@ -76,12 +92,15 @@ def student_list_view(request):
         'student_count': student_count,
         'teachers': teachers,
         'students': students,
+        'enrolled_students': enrolled_students,
+        'active_students': active_students,
     }
     return render(request, 'dashboard/students.html', context)
 
 @login_required
 def teacher_list_view(request):
-    all_users = User.objects.all()
+    # Optimize query with select_related for academic_level
+    all_users = User.objects.select_related('academic_level').all()
 
     # Count users by role (single DB query)
     queryset_results = all_users.values('role').annotate(user_count=Count('role'))
@@ -95,6 +114,16 @@ def teacher_list_view(request):
     # Separate users in Python (no new queries)
     teachers = [user for user in all_users if user.role == User.Role.TEACHER]
     students = [user for user in all_users if user.role == User.Role.STUDENT]
+    
+    # Calculate teacher statistics
+    active_teachers = sum(1 for t in teachers if t.is_active)
+    
+    # Count videos and live classes by teachers
+    videos_by_teachers = models.Video.objects.filter(teacher__in=[t.id for t in teachers]).values('teacher').annotate(video_count=Count('id'))
+    video_counts = {item['teacher']: item['video_count'] for item in videos_by_teachers}
+    
+    live_classes_by_teachers = models.LiveClass.objects.filter(hosts__in=[t.id for t in teachers]).values('hosts').annotate(class_count=Count('id'))
+    class_counts = {item['hosts']: item['class_count'] for item in live_classes_by_teachers}
 
     context = {
         'total': total_users,
@@ -103,12 +132,18 @@ def teacher_list_view(request):
         'student_count': student_count,
         'teachers': teachers,
         'students': students,
+        'active_teachers': active_teachers,
+        'video_counts': video_counts,
+        'class_counts': class_counts,
     }
     return render(request, 'dashboard/teachers.html', context)
 
 @login_required
 def stream_list_view(request):
-    streams = models.Stream.objects.all().order_by('-pk')
+    # Optimize with select_related for level and annotate subject count
+    streams = models.Stream.objects.select_related('level').annotate(
+        subject_count=Count('subjects')
+    ).order_by('-pk')
     context={
         'streams': streams,
         'stream_count': streams.count(),
@@ -118,7 +153,10 @@ def stream_list_view(request):
 
 @login_required
 def video_list_view(request):
-    videos = models.Video.objects.all().order_by('-pk')
+    # Optimize with select_related and prefetch_related
+    videos = models.Video.objects.select_related(
+        'subject', 'teacher', 'course', 'level'
+    ).prefetch_related('stream').order_by('-uploaded_at')
     context={
         'videos': videos,
         'video_count': videos.count(),
@@ -128,10 +166,37 @@ def video_list_view(request):
 
 @login_required
 def enrollment_list_view(request):
-    enrolled_students=models.User.objects.filter(role=models.User.Role.STUDENT, academic_level__isnull=True)
-    # students registered but not enrolled in any class
+    # Get all students with optimization
+    all_students = models.User.objects.filter(
+        role=models.User.Role.STUDENT
+    ).select_related('academic_level', 'course').order_by('-date_joined')
+    
+    # Students who are NOT enrolled in any course (course is NULL)
+    unenrolled_students = all_students.filter(course__isnull=True)
+    
+    # Students who ARE enrolled in a course
+    enrolled_students = all_students.filter(course__isnull=False)
+    
+    # Statistics
+    total_students = all_students.count()
+    enrolled_count = enrolled_students.count()
+    unenrolled_count = unenrolled_students.count()
+    active_enrolled = enrolled_students.filter(is_active=True).count()
+    
+    # Get enrollment by course
+    enrollments_by_course = enrolled_students.values('course__title').annotate(
+        count=Count('id')
+    ).order_by('-count')[:5]
+    
     context = {
-        'enrollmentss': enrolled_students,
+        'all_students': all_students,
+        'enrolled_students': enrolled_students,
+        'unenrolled_students': unenrolled_students,
+        'total_students': total_students,
+        'enrolled_count': enrolled_count,
+        'unenrolled_count': unenrolled_count,
+        'active_enrolled': active_enrolled,
+        'enrollments_by_course': enrollments_by_course,
     }
     return render(request, 'dashboard/enrollments.html', context)   
 
@@ -139,15 +204,225 @@ def enrollment_list_view(request):
 
 @login_required
 def live_classes_view(request):
-
-    live_classes = models.LiveClass.objects.all().order_by('-pk')
+    # Optimize with select_related for related fields
+    live_classes = models.LiveClass.objects.select_related(
+        'subject', 'hosts', 'level', 'course'
+    ).order_by('-start_time')
     context = {
         'live_classes': live_classes,
         'live_class_count': live_classes.count(),
         'limited_live_classes': live_classes[:3],
     }
-
+    
     return render(request, 'dashboard/liveclasses.html', context)
+
+
+@login_required
+def payment_method_list(request):
+    payment_methods = models.PaymentMethod.objects.all()
+    context = {
+        'payment_methods': payment_methods,
+    }
+    return render(request, 'dashboard/payment_methods.html', context)
+
+
+@login_required
+def add_payment_method(request):
+    from .forms import PaymentMethodForm
+    if request.method == 'POST':
+        form = PaymentMethodForm(request.POST, request.FILES)
+        if form.is_valid():
+            payment_method = form.save(commit=False)
+            payment_method.created_by = request.user
+            payment_method.save()
+            messages.success(request, f'Payment method "{payment_method.name}" has been added successfully.')
+            return redirect('dashboard:payment_method_list')
+        else:
+            messages.error(request, 'Please correct the errors below.')
+    else:
+        form = PaymentMethodForm()
+    
+    context = {
+        'form': form,
+        'item_name': 'Payment Method',
+    }
+    return render(request, 'dashboard/add_item.html', context)
+
+
+@login_required
+def payment_method_detail(request, pk):
+    from .forms import PaymentMethodForm
+    payment_method = get_object_or_404(models.PaymentMethod, pk=pk)
+    form = PaymentMethodForm(instance=payment_method)
+    
+    context = {
+        'payment_method': payment_method,
+        'object': payment_method,
+        'form': form,
+        'item_name': 'Payment Method',
+    }
+    return render(request, 'dashboard/detailed.html', context)
+
+
+@login_required
+def edit_payment_method(request, pk):
+    from .forms import PaymentMethodForm
+    payment_method = get_object_or_404(models.PaymentMethod, pk=pk)
+    
+    if request.method == 'POST':
+        form = PaymentMethodForm(request.POST, request.FILES, instance=payment_method)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Payment method "{payment_method.name}" has been updated successfully.')
+            return redirect('dashboard:payment_method_detail', pk=pk)
+        else:
+            messages.error(request, 'Please correct the errors below.')
+    else:
+        form = PaymentMethodForm(instance=payment_method)
+    
+    context = {
+        'form': form,
+        'item_name': 'Payment Method',
+        'is_edit': True,
+        'object': payment_method,
+    }
+    return render(request, 'dashboard/add_item.html', context)
+
+
+@login_required
+def delete_payment_method(request, pk):
+    payment_method = get_object_or_404(models.PaymentMethod, pk=pk)
+    
+    if request.method == 'POST':
+        name = payment_method.name
+        payment_method.delete()
+        messages.success(request, f'Payment method "{name}" has been deleted successfully.')
+        return redirect('dashboard:payment_method_list')
+    
+    context = {
+        'object': payment_method,
+        'object_type': 'Payment Method',
+        'return_url': 'dashboard:payment_method_list',
+    }
+    return render(request, 'dashboard/confirm_delete.html', context)
+
+
+# ============================================
+# PAYMENT VERIFICATION VIEWS
+# ============================================
+
+@login_required
+def payment_verification_list(request):
+    """List all payment verifications (admin view)"""
+    # Separate verified and unverified payments
+    unverified_payments = models.PaymentVerification.objects.filter(verified=False).select_related('user', 'course', 'payment_method')
+    verified_payments = models.PaymentVerification.objects.filter(verified=True).select_related('user', 'course', 'payment_method', 'verified_by')
+    
+    context = {
+        'unverified_payments': unverified_payments,
+        'verified_payments': verified_payments,
+        'unverified_count': unverified_payments.count(),
+        'verified_count': verified_payments.count(),
+    }
+    return render(request, 'dashboard/payment_verifications.html', context)
+
+
+@login_required
+def add_payment_verification(request):
+    """Student submits payment verification request"""
+    from apps.Course.forms import PaymentVerificationForm
+    
+    if request.method == 'POST':
+        form = PaymentVerificationForm(request.POST, request.FILES, user=request.user)
+        if form.is_valid():
+            payment_verification = form.save()
+            messages.success(request, f'Payment verification request for "{payment_verification.course.title}" has been submitted successfully. Please wait for admin approval.')
+            return redirect('dashboard:my_payment_verifications')
+        else:
+            messages.error(request, 'Please correct the errors below.')
+    else:
+        form = PaymentVerificationForm(user=request.user)
+    
+    context = {
+        'form': form,
+        'item_name': 'Payment Verification',
+    }
+    return render(request, 'dashboard/add_item.html', context)
+
+
+@login_required
+def payment_verification_detail(request, pk):
+    """View payment verification details"""
+    payment_verification = get_object_or_404(models.PaymentVerification, pk=pk)
+    
+    context = {
+        'payment_verification': payment_verification,
+        'object': payment_verification,
+    }
+    return render(request, 'dashboard/payment_verification_detail.html', context)
+
+
+@login_required
+def verify_payment(request, pk):
+    """Admin verifies a payment"""
+    payment_verification = get_object_or_404(models.PaymentVerification, pk=pk)
+    
+    if request.method == 'POST':
+        notes = request.POST.get('verification_notes', '')
+        action = request.POST.get('action')
+        
+        if action == 'approve':
+            payment_verification.verify(request.user, notes)
+            messages.success(request, f'Payment verified successfully. User {payment_verification.user.username} has been enrolled in {payment_verification.course.title}.')
+        elif action == 'reject':
+            payment_verification.verification_notes = notes
+            payment_verification.save()
+            messages.warning(request, 'Payment verification notes updated. Payment remains unverified.')
+        
+        return redirect('dashboard:payment_verification_list')
+    
+    context = {
+        'payment_verification': payment_verification,
+    }
+    return render(request, 'dashboard/verify_payment.html', context)
+
+
+@login_required
+def my_payment_verifications(request):
+    """Student views their own payment verification requests"""
+    payment_verifications = models.PaymentVerification.objects.filter(user=request.user).select_related('course', 'payment_method', 'verified_by')
+    
+    context = {
+        'payment_verifications': payment_verifications,
+    }
+    return render(request, 'dashboard/my_payment_verifications.html', context)
+
+
+@login_required
+def delete_payment_verification(request, pk):
+    payment_verification = get_object_or_404(models.PaymentVerification, pk=pk)
+    
+    # Only allow user to delete their own unverified payments
+    if payment_verification.user != request.user and not request.user.role == User.Role.ADMIN:
+        messages.error(request, 'You do not have permission to delete this payment verification.')
+        return redirect('dashboard:my_payment_verifications')
+    
+    if payment_verification.verified:
+        messages.error(request, 'Cannot delete verified payment.')
+        return redirect('dashboard:my_payment_verifications')
+    
+    if request.method == 'POST':
+        course_title = payment_verification.course.title
+        payment_verification.delete()
+        messages.success(request, f'Payment verification for "{course_title}" has been deleted.')
+        return redirect('dashboard:my_payment_verifications')
+    
+    context = {
+        'object': payment_verification,
+        'object_type': 'Payment Verification',
+        'return_url': 'dashboard:my_payment_verifications',
+    }
+    return render(request, 'dashboard/confirm_delete.html', context)
 
 
 # from django.contrib.auth.decorators import login_required
@@ -158,10 +433,13 @@ from django.db.models import Count
 
 @login_required
 def dashboard_view(request):
+    from django.utils import timezone
+    from datetime import timedelta
+    
     context = {}
 
     # === 1. User Statistics ===
-    all_users = User.objects.all()
+    all_users = User.objects.select_related('academic_level', 'course').all()
 
     # Count users by role (single DB query)
     queryset_results = all_users.values('role').annotate(user_count=Count('role'))
@@ -175,6 +453,16 @@ def dashboard_view(request):
     # Separate users in Python (no new queries)
     teachers = [user for user in all_users if user.role == User.Role.TEACHER]
     students = [user for user in all_users if user.role == User.Role.STUDENT]
+    
+    # Additional user statistics
+    enrolled_students = sum(1 for s in students if s.course is not None)
+    active_students = sum(1 for s in students if s.is_active)
+    active_teachers = sum(1 for t in teachers if t.is_active)
+    
+    # Recent users (last 7 days)
+    week_ago = timezone.now() - timedelta(days=7)
+    new_students_week = sum(1 for s in students if s.date_joined >= week_ago)
+    new_teachers_week = sum(1 for t in teachers if t.date_joined >= week_ago)
 
     context.update({
         'total': total_users,
@@ -183,59 +471,110 @@ def dashboard_view(request):
         'student_count': student_count,
         'teachers': teachers,
         'students': students,
+        'enrolled_students': enrolled_students,
+        'active_students': active_students,
+        'active_teachers': active_teachers,
+        'new_students_week': new_students_week,
+        'new_teachers_week': new_teachers_week,
     })
 
-    # === 2. Extra Curricular Activities ===
-    extra_activities = models.Course.objects.all()
+    # === 2. Courses ===
+    extra_activities = models.Course.objects.prefetch_related('participants').annotate(
+        participant_count=Count('participants')
+    ).order_by('-created_at')
+    
+    # Course statistics
+    total_courses = extra_activities.count()
+    free_courses = extra_activities.filter(cost=0).count()
+    paid_courses = total_courses - free_courses
+    total_enrollments = sum(course.participant_count for course in extra_activities)
+    
     context.update({
         'extra_activities': extra_activities,
-        'extra_activity_count': extra_activities.count(),
+        'extra_activity_count': total_courses,
         'limited_activities': extra_activities[:3],
+        'free_courses': free_courses,
+        'paid_courses': paid_courses,
+        'total_enrollments': total_enrollments,
     })
 
     # === 3. Academic Levels ===
-    levels = models.AcademicLevel.objects.all().order_by('-pk')
+    levels = models.AcademicLevel.objects.prefetch_related('subjects', 'streams').all().order_by('-pk')
     limited_levels = levels[:3]
+    
+    # Level statistics
+    total_capacity = sum(level.capacity for level in levels if level.capacity)
+    students_by_level = {}
+    for level in levels:
+        level_students = sum(1 for s in students if s.academic_level == level)
+        students_by_level[level.id] = level_students
+    
     context.update({
         'levels': levels,
         'level_count': levels.count(),
         'limited_levels': limited_levels,
-        'capacity_remaining': [
-            level.capacity_remaining for level in limited_levels
-            if level.capacity_remaining is not None
-        ],
+        'total_capacity': total_capacity,
+        'students_by_level': students_by_level,
     })
 
     # === 4. Subjects ===
-    subjects = models.Subject.objects.all()
+    subjects = models.Subject.objects.select_related('levels').prefetch_related('streams').all()
     context.update({
         'subjects': subjects,
         'subject_count': subjects.count(),
         'limited_subjects': subjects[:3],
     })
 
-    # # === 5. Streams ===
-    # streams = Stream.objects.all().order_by('-pk')
-    # context.update({
-    #     'streams': streams,
-    #     'stream_count': streams.count(),
-    #     'limited_streams': streams[:3],
-    # })
-
-    # # === 6. Live Classes ===
-    # live_classes = LiveClass.objects.all().order_by('-pk')
-    # context.update({
-    #     'live_classes': live_classes,
-    #     'live_class_count': live_classes.count(),
-    #     'limited_live_classes': live_classes[:3],
-    # })
-
-    # === 7. Videos ===
-    videos = models.Video.objects.all().order_by('-pk')
+    # === 5. Videos ===
+    videos = models.Video.objects.select_related('subject', 'teacher', 'course', 'level').order_by('-uploaded_at')
+    
+    # Video statistics
+    total_videos = videos.count()
+    free_videos = videos.filter(cost=0).count()
+    
     context.update({
         'videos': videos,
-        'video_count': videos.count(),
+        'video_count': total_videos,
         'limited_videos': videos[:3],
+        'free_videos': free_videos,
+    })
+    
+    # === 6. Live Classes ===
+    live_classes = models.LiveClass.objects.select_related('subject', 'hosts', 'level', 'course').order_by('start_time')
+    now = timezone.now()
+    
+    # Live class statistics
+    upcoming_classes = [lc for lc in live_classes if lc.start_time > now]
+    live_now = [lc for lc in live_classes if lc.is_live()]
+    
+    context.update({
+        'live_classes': live_classes,
+        'live_class_count': live_classes.count(),
+        'upcoming_classes': upcoming_classes[:5],
+        'live_now_count': len(live_now),
+    })
+    
+    # === 7. Streams ===
+    streams = models.Stream.objects.select_related('level').annotate(
+        subject_count=Count('subjects')
+    ).order_by('-pk')
+    
+    context.update({
+        'streams': streams,
+        'stream_count': streams.count(),
+    })
+    
+    # === 8. Payment Verifications ===
+    payments = models.PaymentVerification.objects.select_related('user', 'course', 'payment_method').all()
+    pending_payments = payments.filter(verified=False).count()
+    verified_payments = payments.filter(verified=True).count()
+    total_revenue = sum(p.amount for p in payments.filter(verified=True))
+    
+    context.update({
+        'total_payments': payments.count(),
+        'pending_payments': pending_payments,
+        'verified_payments': verified_payments,
+        'total_revenue': total_revenue,
     })
 
     return render(request, 'dashboard/index.html', context)
@@ -559,50 +898,21 @@ def subject_delete(request, pk):
 
 @login_required
 def enrollment_detail(request, pk):
-    enrollment = get_object_or_404(models.Enrollment, pk=pk)
-    if request.method == 'POST':
-        form = EnrollmentModelForm(request.POST, instance=enrollment)
-        if form.is_valid():
-            form.save()
-            messages.success(request, f'Enrollment updated successfully for {enrollment.student.get_full_name() or enrollment.student.username}!')
-            return redirect('dashboard:enrollment_detail', pk=pk)
-        else:
-            messages.error(request, 'Please correct the errors below.')
-    else:
-        form = EnrollmentModelForm(instance=enrollment)
-
-    context = {
-        'form': form,
-        'item_name': 'Enrollment',
-        'delete_url': reverse('dashboard:enrollment_delete', args=[pk]),
-        'object': enrollment
-    }
-    return render(request, 'dashboard/detailed.html', context)
-
-# @login_required
-# def enrollment_create(request):
-#     if request.method == 'POST':
-#         form = EnrollmentForm(request.POST)
-#         if form.is_valid():
-#             enrollment = form.save()
-#             messages.success(request, f'Enrollment created successfully!')
-#             return redirect('dashboard:enrollment_detail', pk=enrollment.pk)
-#         else:
-#             messages.error(request, 'Please correct the errors below.')
-#     else:
-#         form = EnrollmentForm()
-    
-#     context = {'form': form, 'item_name': 'Enrollment'}
-#     return render(request, 'dashboard/add_item.html', context)
+    # Redirect to user detail since enrollment is now handled via user.course
+    user = get_object_or_404(models.User, pk=pk)
+    return redirect('dashboard:user_detail', pk=user.pk)
 
 @login_required
 def enrollment_delete(request, pk):
-    enrollment = get_object_or_404(models.Enrollment, pk=pk)
+    # Redirect to user detail to edit course assignment
+    user = get_object_or_404(models.User, pk=pk)
     if request.method == 'POST':
-        enrollment.delete()
-        messages.success(request, f'Enrollment deleted successfully!')
+        # Clear the course assignment to "unenroll" the user
+        user.course = None
+        user.save()
+        messages.success(request, f'{user.get_full_name() or user.username} has been unenrolled!')
         return redirect('dashboard:enrollment_home')
-    return redirect('dashboard:enrollment_detail', pk=pk)
+    return redirect('dashboard:user_detail', pk=pk)
 
 
 # ============================================
@@ -673,7 +983,7 @@ def liveclass_delete(request, pk):
 #     return render(request, 'dashboard/activity_list.html', context)
 @login_required
 def activity_detail(request, pk):
-    activity = get_object_or_404(models.Course, pk=pk)
+    activity = get_object_or_404(models.Course.objects.prefetch_related('enrolled_students'), pk=pk)
     if request.method == 'POST':
         form = CourseForm(request.POST, request.FILES, instance=activity)
         
@@ -686,11 +996,16 @@ def activity_detail(request, pk):
     else:
         form = CourseForm(instance=activity)
     
+    # Get enrolled students (from User.course ForeignKey relationship)
+    enrolled_students = activity.enrolled_students.all().order_by('username')
+    
     context = {
         'form': form,
         'item_name': 'Activity',
         'delete_url': reverse('dashboard:activity_delete', args=[pk]),
-        'object': activity
+        'object': activity,
+        'enrolled_students': enrolled_students,
+        'enrolled_count': enrolled_students.count()
     }
     return render(request, 'dashboard/detailed.html', context)
 
@@ -934,13 +1249,15 @@ def global_search_view(request):
                 Q(description__icontains=search_term)
             )[:20])
         
-        # Search Enrollments
+        # Search Enrollments (users with courses)
         if search_all or search_type == 'enrollments':
-            results['enrollments'] = list(models.Enrollment.objects.filter(
-                Q(student__username__icontains=search_term) |
-                Q(student__first_name__icontains=search_term) |
-                Q(student__last_name__icontains=search_term) |
-                Q(level__name__icontains=search_term)
+            results['enrollments'] = list(models.User.objects.filter(
+                Q(username__icontains=search_term) |
+                Q(first_name__icontains=search_term) |
+                Q(last_name__icontains=search_term) |
+                Q(course__title__icontains=search_term),
+                role=models.User.Role.STUDENT,
+                course__isnull=False
             )[:20])
     
     except Exception as e:

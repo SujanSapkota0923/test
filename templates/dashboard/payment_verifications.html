@@ -1,0 +1,147 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+{% block title %}Payment Verifications - Course Management{% endblock %}
+{% block content %}
+<div class="app-wrapper">
+    <div class="app-content pt-3 p-md-3 p-lg-4">
+        <div class="container-xl">
+
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="app-page-title mb-0">
+                    <i class="fas fa-check-circle me-2"></i>Payment Verifications
+                </h1>
+            </div>
+
+            <!-- Tabs -->
+            <ul class="nav nav-tabs mb-4" id="paymentTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="unverified-tab" data-bs-toggle="tab" data-bs-target="#unverified" type="button">
+                        <i class="fas fa-clock me-2"></i>Pending ({{ unverified_count }})
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="verified-tab" data-bs-toggle="tab" data-bs-target="#verified" type="button">
+                        <i class="fas fa-check me-2"></i>Verified ({{ verified_count }})
+                    </button>
+                </li>
+            </ul>
+
+            <div class="tab-content" id="paymentTabsContent">
+                <!-- Unverified Payments -->
+                <div class="tab-pane fade show active" id="unverified" role="tabpanel">
+                    {% if unverified_payments %}
+                    <div class="app-card app-card-orders-table shadow-sm mb-5">
+                        <div class="app-card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Student</th>
+                                            <th>Course</th>
+                                            <th>Payment Method</th>
+                                            <th>Amount</th>
+                                            <th>Submitted</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for payment in unverified_payments %}
+                                        <tr>
+                                            <td>
+                                                <strong>{{ payment.user.first_name }} {{ payment.user.last_name }}</strong><br>
+                                                <small class="text-muted">@{{ payment.user.username }}</small>
+                                            </td>
+                                            <td>{{ payment.course.title }}</td>
+                                            <td>
+                                                <span class="badge bg-info">{{ payment.payment_method.name }}</span>
+                                            </td>
+                                            <td><strong>${{ payment.amount }}</strong></td>
+                                            <td>{{ payment.created_at|date:"M d, Y H:i" }}</td>
+                                            <td>
+                                                <a href="{% url 'dashboard:verify_payment' payment.pk %}" class="btn btn-sm btn-success">
+                                                    <i class="fas fa-check me-1"></i>Review
+                                                </a>
+                                                <a href="{% url 'dashboard:payment_verification_detail' payment.pk %}" class="btn btn-sm btn-primary">
+                                                    <i class="fas fa-eye me-1"></i>View
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="app-card app-card-orders-table shadow-sm mb-5">
+                        <div class="app-card-body text-center py-5">
+                            <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                            <h5 class="text-muted">No Pending Verifications</h5>
+                            <p class="text-muted">All payment verification requests have been processed.</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Verified Payments -->
+                <div class="tab-pane fade" id="verified" role="tabpanel">
+                    {% if verified_payments %}
+                    <div class="app-card app-card-orders-table shadow-sm mb-5">
+                        <div class="app-card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Student</th>
+                                            <th>Course</th>
+                                            <th>Amount</th>
+                                            <th>Verified By</th>
+                                            <th>Verified At</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for payment in verified_payments %}
+                                        <tr>
+                                            <td>
+                                                <strong>{{ payment.user.first_name }} {{ payment.user.last_name }}</strong><br>
+                                                <small class="text-muted">@{{ payment.user.username }}</small>
+                                            </td>
+                                            <td>{{ payment.course.title }}</td>
+                                            <td><strong>${{ payment.amount }}</strong></td>
+                                            <td>{{ payment.verified_by.username|default:"N/A" }}</td>
+                                            <td>{{ payment.verified_at|date:"M d, Y H:i" }}</td>
+                                            <td>
+                                                <a href="{% url 'dashboard:payment_verification_detail' payment.pk %}" class="btn btn-sm btn-primary">
+                                                    <i class="fas fa-eye me-1"></i>View
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="app-card app-card-orders-table shadow-sm mb-5">
+                        <div class="app-card-body text-center py-5">
+                            <i class="fas fa-history fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No Verified Payments</h5>
+                            <p class="text-muted">Verified payments will appear here.</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{% static 'dashboard/assets/plugins/popper.min.js' %}"></script>
+<script src="{% static 'dashboard/assets/plugins/bootstrap/js/bootstrap.min.js' %}"></script>
+<script src="{% static 'dashboard/assets/js/app.js' %}"></script>
+{% endblock %}

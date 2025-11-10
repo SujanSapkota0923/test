@@ -1,6 +1,7 @@
 {% extends 'dashboard/base.html' %}
 {% load static %}
-{% block title %}teachers{% endblock %}
+{% load cutom_filters %}
+{% block title %}Teachers{% endblock %}
 {% block content %}
 <div class="app-wrapper">
 
@@ -8,18 +9,86 @@
 		<div class="container-xl">
 
 			<div class="d-flex justify-content-between align-items-center mb-4">
-				<h1 class="app-page-title mb-0">teachers</h1>
+				<h1 class="app-page-title mb-0"><i class="fas fa-chalkboard-teacher me-2"></i>Teachers</h1>
 				<div class="d-flex align-items-center gap-3">
-					<!-- <form class="table-search-form row gx-1 align-items-center">
-						<div class="col-auto">
-							<input type="text" id="search-orders" name="searchorders" class="form-control search-orders"
-								placeholder="Search">
+					<div class="input-group" style="max-width: 300px;">
+						<span class="input-group-text border-0 bg-transparent"><i class="fas fa-search text-muted"></i></span>
+						<input type="text" id="teachers-search" class="form-control border-0 shadow-none" placeholder="Search teachers…" autocomplete="off" />
+						<button type="button" class="btn btn-link px-2 clear-search" hidden><i class="fas fa-times-circle text-muted"></i></button>
+					</div>
+					<a class="btn app-btn-primary text-nowrap" href="{% url 'add_user' %}"><i class="fas fa-plus me-2"></i>Create New Teacher</a>
+				</div>
+			</div>
+
+			<!-- Statistics Cards -->
+			<div class="row g-3 mb-4">
+				<div class="col-6 col-md-3">
+					<div class="card shadow-sm border-0 h-100">
+						<div class="card-body">
+							<div class="d-flex align-items-center">
+								<div class="flex-shrink-0">
+									<div class="stat-icon bg-primary bg-opacity-10 text-primary rounded-circle p-3">
+										<i class="fas fa-chalkboard-teacher fa-lg"></i>
+									</div>
+								</div>
+								<div class="flex-grow-1 ms-3">
+									<div class="text-muted small">Total Teachers</div>
+									<div class="fs-4 fw-bold">{{ teacher_count }}</div>
+								</div>
+							</div>
 						</div>
-						<div class="col-auto">
-							<button type="submit" class="btn app-btn-secondary">Search</button>
+					</div>
+				</div>
+				<div class="col-6 col-md-3">
+					<div class="card shadow-sm border-0 h-100">
+						<div class="card-body">
+							<div class="d-flex align-items-center">
+								<div class="flex-shrink-0">
+									<div class="stat-icon bg-success bg-opacity-10 text-success rounded-circle p-3">
+										<i class="fas fa-user-check fa-lg"></i>
+									</div>
+								</div>
+								<div class="flex-grow-1 ms-3">
+									<div class="text-muted small">Active</div>
+									<div class="fs-4 fw-bold">{{ active_teachers }}</div>
+								</div>
+							</div>
 						</div>
-					</form> -->
-					<a class="btn app-btn-primary text-nowrap" href="{% url 'add_user' %}">Create New teacher</a>
+					</div>
+				</div>
+				<div class="col-6 col-md-3">
+					<div class="card shadow-sm border-0 h-100">
+						<div class="card-body">
+							<div class="d-flex align-items-center">
+								<div class="flex-shrink-0">
+									<div class="stat-icon bg-info bg-opacity-10 text-info rounded-circle p-3">
+										<i class="fas fa-play-circle fa-lg"></i>
+									</div>
+								</div>
+								<div class="flex-grow-1 ms-3">
+									<div class="text-muted small">Total Videos</div>
+									<div class="fs-4 fw-bold">{{ video_counts.values|length }}</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="col-6 col-md-3">
+					<div class="card shadow-sm border-0 h-100">
+						<div class="card-body">
+							<div class="d-flex align-items-center">
+								<div class="flex-shrink-0">
+									<div class="stat-icon bg-danger bg-opacity-10 text-danger rounded-circle p-3">
+										<i class="fas fa-video fa-lg"></i>
+									</div>
+								</div>
+								<div class="flex-grow-1 ms-3">
+									<div class="text-muted small">Live Classes</div>
+									<div class="fs-4 fw-bold">{{ class_counts.values|length }}</div>
+								</div>
+							</div>
+						</div>
+					</div>
 				</div>
 			</div>
 
@@ -28,26 +97,82 @@
 					<div class="app-card app-card-orders-table shadow-sm mb-5">
 						<div class="app-card-body">
 							<div class="table-responsive">
-								<table class="table app-table-hover mb-0 text-left">
+								<table id="teachers-table" class="table app-table-hover mb-0 text-left">
 									<thead>
 										<tr>
-											<th class="cell">S.N</th>
-											<th class="cell">Name</th>
-											<th class="cell">Username</th>
-											<th class="cell">Phone</th>
-											<th class="cell">Class</th>
+											<th class="cell">Profile</th>
+											<th class="cell">Teacher Info</th>
+											<th class="cell">Contact</th>
+											<th class="cell">Academic Level</th>
+											<th class="cell">Videos</th>
+											<th class="cell">Live Classes</th>
+											<th class="cell">Status</th>
 											<th class="cell">Actions</th>
 										</tr>
 									</thead>
 									<tbody>
 										{% for teacher in teachers %}
 										<tr>
-											<td class="cell">{{ forloop.counter }}</td>
-											<td class="cell"><span class="truncate">{{teacher.first_name}} {{teacher.last_name}}</span></td>
-											<td class="cell">{{teacher.username}}</td>
-											<td class="cell">{{teacher.phone}}</td>
-											<td class="cell">{{teacher.level}}</td>
-											<td class="cell"><a class="btn btn-outline-secondary" href="{% url 'dashboard:user_detail' teacher.id %}">View</a></td>
+											<td class="cell">
+												{% if teacher.profile_picture %}
+													<img src="{{ teacher.profile_picture.url }}" alt="{{ teacher.username }}" class="rounded-circle" width="40" height="40">
+												{% else %}
+													<div class="bg-primary bg-opacity-10 text-primary rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+														<i class="fas fa-chalkboard-teacher"></i>
+													</div>
+												{% endif %}
+											</td>
+											<td class="cell">
+												<div class="fw-bold">{{teacher.first_name}} {{teacher.last_name}}</div>
+												<div class="small text-muted"><i class="fas fa-at"></i> {{teacher.username}}</div>
+											</td>
+											<td class="cell">
+												<div class="small">
+													{% if teacher.email %}
+														<i class="fas fa-envelope me-1"></i>{{ teacher.email|truncatewords:2 }}<br>
+													{% endif %}
+													{% if teacher.phone %}
+														<i class="fas fa-phone me-1"></i>{{teacher.phone}}
+													{% endif %}
+												</div>
+											</td>
+											<td class="cell">
+												{% if teacher.academic_level %}
+													<span class="badge bg-info bg-opacity-10 text-info">
+														<i class="fas fa-graduation-cap me-1"></i>{{teacher.academic_level}}
+													</span>
+												{% else %}
+													<span class="badge bg-secondary">All Levels</span>
+												{% endif %}
+											</td>
+											<td class="cell text-center">
+												{% with video_counts|default_if_none:0 as vc %}
+													{% if teacher.id in video_counts %}
+														<span class="badge bg-info"><i class="fas fa-play-circle me-1"></i>{{ video_counts|get_item:teacher.id }}</span>
+													{% else %}
+														<span class="text-muted">0</span>
+													{% endif %}
+												{% endwith %}
+											</td>
+											<td class="cell text-center">
+												{% if teacher.id in class_counts %}
+													<span class="badge bg-danger"><i class="fas fa-video me-1"></i>{{ class_counts|get_item:teacher.id }}</span>
+												{% else %}
+													<span class="text-muted">0</span>
+												{% endif %}
+											</td>
+											<td class="cell">
+												{% if teacher.is_active %}
+													<span class="badge bg-success"><i class="fas fa-circle me-1" style="font-size: 0.5rem;"></i>Active</span>
+												{% else %}
+													<span class="badge bg-secondary"><i class="fas fa-circle me-1" style="font-size: 0.5rem;"></i>Inactive</span>
+												{% endif %}
+											</td>
+											<td class="cell">
+												<a class="btn btn-sm btn-outline-primary" href="{% url 'dashboard:user_detail' teacher.id %}">
+													<i class="fas fa-eye me-1"></i>View
+												</a>
+											</td>
 										</tr>
 										{%endfor%}
 
@@ -82,4 +207,34 @@
 
 <!-- Page Specific JS -->
 <script src="{% static 'dashboard/assets/js/app.js' %}"></script>
+
+<script>
+	// Lightweight client-side search
+	document.addEventListener('DOMContentLoaded', function() {
+		const searchInput = document.getElementById('teachers-search');
+		const clearBtn = document.querySelector('.clear-search');
+		const table = document.getElementById('teachers-table');
+
+		if (searchInput && table) {
+			searchInput.addEventListener('input', function() {
+				const query = this.value.toLowerCase().trim();
+				if (clearBtn) clearBtn.hidden = !query;
+
+				const rows = table.querySelectorAll('tbody tr');
+				rows.forEach(row => {
+					const text = row.textContent.toLowerCase();
+					row.style.display = text.includes(query) ? '' : 'none';
+				});
+			});
+
+			if (clearBtn) {
+				clearBtn.addEventListener('click', function() {
+					searchInput.value = '';
+					searchInput.dispatchEvent(new Event('input'));
+					searchInput.focus();
+				});
+			}
+		}
+	});
+</script>
 {% endblock %}

@@ -4,31 +4,119 @@ Management{% endblock %} {% block content %}
   <div class="app-content pt-3 p-md-3 p-lg-4">
     <div class="container-xl">
       <div class="d-flex justify-content-between align-items-center mb-4">
-  <h1 class="app-page-title mb-0">Class : {{ level.name }}</h1>
+  <h1 class="app-page-title mb-0">
+    <i class="fas fa-chalkboard-teacher text-primary me-2"></i>
+    Class: {{ level.name }}
+  </h1>
         <div class="d-flex align-items-center gap-3">
-          <!-- <form class="table-search-form row gx-1 align-items-center">
-            <div class="col-auto">
-              <input
-                type="text"
-                id="search-orders"
-                name="searchorders"
-                class="form-control search-orders"
-                placeholder="Search"
-              />
-            </div>
-            <div class="col-auto">
-              <button type="submit" class="btn app-btn-secondary">
-                Search
-              </button>
-            </div>
-          </form> -->
+          <div class="input-group" style="max-width: 300px;">
+            <span class="input-group-text border-0 bg-transparent"><i class="fas fa-search text-muted"></i></span>
+            <input type="text" id="class-search" class="form-control border-0 shadow-none" placeholder="Search students…" autocomplete="off" />
+            <button type="button" class="btn btn-link px-2 clear-search" hidden><i class="fas fa-times-circle text-muted"></i></button>
+          </div>
           <a
             class="btn app-btn-primary text-nowrap"
             href="{% url 'add_academic_level' %}"
-            >Create New Class</a
+            ><i class="fas fa-plus me-2"></i>Create New Class</a
           >
         </div>
       </div>
+
+      <!-- Statistics Cards -->
+      <div class="row g-3 mb-4">
+        <div class="col-md-3">
+          <div class="card border-primary">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <h6 class="text-muted mb-1">Total Students</h6>
+                  <h3 class="mb-0">{{ total_students }}</h3>
+                </div>
+                <div class="text-primary">
+                  <i class="fas fa-users fa-2x"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card border-success">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <h6 class="text-muted mb-1">Enrolled</h6>
+                  <h3 class="mb-0 text-success">{{ enrolled_students }}</h3>
+                </div>
+                <div class="text-success">
+                  <i class="fas fa-user-check fa-2x"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card border-warning">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <h6 class="text-muted mb-1">Not Enrolled</h6>
+                  <h3 class="mb-0 text-warning">{{ unenrolled_students }}</h3>
+                </div>
+                <div class="text-warning">
+                  <i class="fas fa-user-clock fa-2x"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card border-info">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <h6 class="text-muted mb-1">Capacity</h6>
+                  <h3 class="mb-0 text-info">{{ level.capacity|default:"∞" }}</h3>
+                </div>
+                <div class="text-info">
+                  <i class="fas fa-layer-group fa-2x"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Streams Section -->
+      {% if level.streams.all %}
+      <div class="card mb-4">
+        <div class="card-header bg-success text-white">
+          <h5 class="mb-0"><i class="fas fa-stream me-2"></i>Available Streams</h5>
+        </div>
+        <div class="card-body">
+          <div class="d-flex flex-wrap gap-2">
+            {% for stream in level.streams.all %}
+              <span class="badge bg-success fs-6 p-2">{{ stream.name }}</span>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Subjects Section -->
+      {% if level.subjects.all %}
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0"><i class="fas fa-book me-2"></i>Subjects</h5>
+        </div>
+        <div class="card-body">
+          <div class="d-flex flex-wrap gap-2">
+            {% for subject in level.subjects.all %}
+              <span class="badge bg-primary fs-6 p-2">{{ subject.name }}</span>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
 
       <div class="tab-content" id="orders-table-tab-content">
         <div
@@ -40,28 +128,83 @@ Management{% endblock %} {% block content %}
           <div class="app-card app-card-orders-table shadow-sm mb-5">
             <div class="app-card-body">
               <div class="table-responsive">
-                <table class="table app-table-hover mb-0 text-left">
+                <table id="class-table" class="table app-table-hover mb-0 text-left">
                   <thead>
                     <tr>
-                      <th class="cell">S.N</th>
-                      <th class="cell">Name</th>
-                      <th class="cell">Username</th>
-                      <th class="cell">Phone</th>
-                      <th class="cell">Actions</th>
+                      <th class="cell" style="width: 5%;">S.N</th>
+                      <th class="cell" style="width: 8%;">Photo</th>
+                      <th class="cell" style="width: 18%;">Name</th>
+                      <th class="cell" style="width: 15%;">Username</th>
+                      <th class="cell" style="width: 12%;">Role</th>
+                      <th class="cell" style="width: 15%;">Phone</th>
+                      <th class="cell" style="width: 12%;">Enrollment</th>
+                      <th class="cell" style="width: 15%;">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {% for user in level_users %}
                     <tr>
-                      <td class="cell">{{forloop.counter}}</td>
                       <td class="cell">
-                        <span class="truncate"
-                          >{{user.first_name}} {{user.last_name}}</span
-                        >
+                        <span class="badge bg-secondary">{{forloop.counter}}</span>
                       </td>
-                      <td class="cell">{{user.username}}</td>
-                      <td class="cell">{{user.phone}}</td>
-                      <td class="cell"><a class="btn btn-outline-secondary" href="{% url 'dashboard:user_detail' user.id %}">View</a></td>
+                      <td class="cell">
+                        {% if user.profile_picture %}
+                          <img src="{{ user.profile_picture.url }}" alt="{{ user.get_full_name }}" 
+                               class="rounded-circle" style="width: 40px; height: 40px; object-fit: cover;">
+                        {% else %}
+                          <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" 
+                               style="width: 40px; height: 40px;">
+                            <i class="fas fa-user"></i>
+                          </div>
+                        {% endif %}
+                      </td>
+                      <td class="cell">
+                        <div class="d-flex flex-column">
+                          <strong>{{user.first_name}} {{user.last_name}}</strong>
+                          <small class="text-muted">{{user.email}}</small>
+                        </div>
+                      </td>
+                      <td class="cell">
+                        <code class="bg-light p-1 rounded">@{{user.username}}</code>
+                      </td>
+                      <td class="cell">
+                        {% if user.role == 'student' %}
+                          <span class="badge bg-info">
+                            <i class="fas fa-user-graduate me-1"></i>Student
+                          </span>
+                        {% elif user.role == 'teacher' %}
+                          <span class="badge bg-success">
+                            <i class="fas fa-chalkboard-teacher me-1"></i>Teacher
+                          </span>
+                        {% else %}
+                          <span class="badge bg-danger">
+                            <i class="fas fa-user-shield me-1"></i>Admin
+                          </span>
+                        {% endif %}
+                      </td>
+                      <td class="cell">
+                        <small>
+                          <i class="fas fa-phone text-muted me-1"></i>
+                          {{user.phone|default:"N/A"}}
+                        </small>
+                      </td>
+                      <td class="cell">
+                        {% if user.course %}
+                          <span class="badge bg-success">
+                            <i class="fas fa-check-circle me-1"></i>Enrolled
+                          </span>
+                          <div><small class="text-muted">{{user.course.title|truncatewords:3}}</small></div>
+                        {% else %}
+                          <span class="badge bg-warning text-dark">
+                            <i class="fas fa-clock me-1"></i>Not Enrolled
+                          </span>
+                        {% endif %}
+                      </td>
+                      <td class="cell">
+                        <a class="btn btn-sm btn-outline-primary" href="{% url 'dashboard:user_detail' user.id %}">
+                          <i class="fas fa-eye me-1"></i>View
+                        </a>
+                      </td>
                     </tr>
                     {%endfor%}
                   </tbody>
@@ -85,8 +228,12 @@ Management{% endblock %} {% block content %}
 
 {% endblock %} {% block extra_scripts %}
 <script src="{% static 'dashboard/assets/plugins/popper.min.js' %}"></script>
-<script src="{% static 'dashboard/assets/plugins/bootstrap/js/bootstrap.min.js' %}"></script>
+<script
+  src="{% static 'dashboard/assets/plugins/bootstrap/js/bootstrap.min.js' %}"
+></script>
 
 <!-- Page Specific JS -->
 <script src="{% static 'dashboard/assets/js/app.js' %}"></script>
+<script src="{% static 'dashboard/assets/js/page-search.js' %}"></script>
+<script>initPageSearch('class-search', 'class-table');</script>
 {% endblock %}

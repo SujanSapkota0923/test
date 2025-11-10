@@ -11,18 +11,14 @@ Student
 		<div class="container-xl">
 
 			<div class="d-flex justify-content-between align-items-center mb-4">
-				<h1 class="app-page-title mb-0">Stream</h1>
+				<h1 class="app-page-title mb-0"><i class="fas fa-stream me-2"></i>Streams</h1>
 				<div class="d-flex align-items-center gap-3">
-					<!-- <form class="table-search-form row gx-1 align-items-center">
-						<div class="col-auto">
-							<input type="text" id="search-orders" name="searchorders" class="form-control search-orders"
-								placeholder="Search">
-						</div>
-						<div class="col-auto">
-							<button type="submit" class="btn app-btn-secondary">Search</button>
-						</div>
-					</form> -->
-					<a class="btn app-btn-primary text-nowrap" href="{% url 'add_stream' %}">Create New Stream</a>
+					<div class="input-group" style="max-width: 300px;">
+						<span class="input-group-text border-0 bg-transparent"><i class="fas fa-search text-muted"></i></span>
+						<input type="text" id="streams-search" class="form-control border-0 shadow-none" placeholder="Search streams…" autocomplete="off" />
+						<button type="button" class="btn btn-link px-2 clear-search" hidden><i class="fas fa-times-circle text-muted"></i></button>
+					</div>
+					<a class="btn app-btn-primary text-nowrap" href="{% url 'add_stream' %}"><i class="fas fa-plus me-2"></i>Create New Stream</a>
 				</div>
 			</div>
 
@@ -32,25 +28,53 @@ Student
 					<div class="app-card app-card-orders-table shadow-sm mb-5">
 						<div class="app-card-body">
 							<div class="table-responsive">
-								<table class="table app-table-hover mb-0 text-left">
+								<table id="streams-table" class="table app-table-hover mb-0 text-left">
 									<thead>
 										<tr>
-											<th class="cell">Id</th>
-											<th class="cell">Name</th>
-											<th class="cell">Slug</th>
-											<th class="cell">Class</th>
-											<th class="cell">Actions</th>
+											<th class="cell" style="width: 8%;">ID</th>
+											<th class="cell" style="width: 25%;">Stream Name</th>
+											<th class="cell" style="width: 20%;">Slug</th>
+											<th class="cell" style="width: 20%;">Academic Level</th>
+											<th class="cell" style="width: 12%;">Subjects</th>
+											<th class="cell" style="width: 15%;">Actions</th>
 										</tr>
 									</thead>
 									<tbody>
 										{% for stream in streams %}
 										<tr>
-											<td class="cell">{{ forloop.counter }}</td>
-											<td class="cell"><span class="truncate">{{ stream.name }}</span>
+											<td class="cell">
+												<span class="badge bg-secondary">#{{ stream.id }}</span>
 											</td>
-											<td class="cell">{{ stream.slug }}</td>
-											<td class="cell">{{ stream.level.name }}</td>
-											<td><a class="btn btn-outline-secondary" href="{% url 'dashboard:stream_detail' stream.id %}">View</a></td>
+											<td class="cell">
+												<div class="d-flex align-items-center">
+													<i class="fas fa-stream text-success me-2"></i>
+													<strong>{{ stream.name }}</strong>
+												</div>
+											</td>
+											<td class="cell">
+												<code class="bg-light p-1 rounded">{{ stream.slug }}</code>
+											</td>
+											<td class="cell">
+												{% if stream.level %}
+													<span class="badge bg-info">
+														<i class="fas fa-graduation-cap me-1"></i>
+														{{ stream.level.name }}
+													</span>
+												{% else %}
+													<span class="badge bg-secondary">No level</span>
+												{% endif %}
+											</td>
+											<td class="cell">
+												<div class="d-flex align-items-center">
+													<i class="fas fa-book text-primary me-2"></i>
+													<span class="badge bg-primary">{{ stream.subject_count|default:0 }}</span>
+												</div>
+											</td>
+											<td class="cell">
+												<a class="btn btn-sm btn-outline-primary" href="{% url 'dashboard:stream_detail' stream.id %}">
+													<i class="fas fa-eye me-1"></i>View Details
+												</a>
+											</td>
 										</tr>
 										{% endfor %}
 									</tbody>
@@ -58,15 +82,17 @@ Student
 							</div><!--//table-responsive-->
 
 						</div><!--//app-card-body-->
-					</div><!--//app-card-->
+				</div><!--//app-card-->
 
 
 
-					{% endblock %}
-					{% block extra_scripts %}
-					<script src="{% static 'dashboard/assets/plugins/popper.min.js' %}"></script>
-					<script src="{% static 'dashboard/assets/plugins/bootstrap/js/bootstrap.min.js' %}"></script>
+				{% endblock %}
+				{% block extra_scripts %}
+				<script src="{% static 'dashboard/assets/plugins/popper.min.js' %}"></script>
+				<script src="{% static 'dashboard/assets/plugins/bootstrap/js/bootstrap.min.js' %}"></script>
 
-					<!-- Page Specific JS -->
-					<script src="{% static 'dashboard/assets/js/app.js' %}"></script>
-					{% endblock %}
+				<!-- Page Specific JS -->
+				<script src="{% static 'dashboard/assets/js/app.js' %}"></script>
+				<script src="{% static 'dashboard/assets/js/page-search.js' %}"></script>
+				<script>initPageSearch('streams-search', 'streams-table');</script>
+				{% endblock %}

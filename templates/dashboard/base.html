@@ -324,7 +324,7 @@
               </li>
               
               <li class="nav-item">
-                <a class="nav-link {% if '/course/' in request.path %}active{% endif %}"
+                <a class="nav-link {% if '/courses/' in request.path %}active{% endif %}"
                   href="{% url 'dashboard:course_home' %}">
                   <span class="nav-icon">
                     <i class="fas fa-graduation-cap"></i>
@@ -366,12 +366,31 @@
                 </div>
               </li>
               <li class="nav-item">
-                <a class="nav-link {% if '/enrollment' in request.path %}active{% endif %}" 
-                   href="{% url 'dashboard:enrollment_home' %}">
+                <a class="nav-link {% if '/stream' in request.path %}active{% endif %}" 
+                   href="{% url 'dashboard:stream_home' %}">
                   <span class="nav-icon">
-                    <i class="fas fa-user-check"></i>
+                    <i class="fas fa-layer-group"></i>
                   </span>
-                  <span class="nav-link-text">Enrollments</span>
+                  <span class="nav-link-text">Streams</span>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link {% if '/payments/' in request.path and '/payment-verifications/' not in request.path %}active{% endif %}" 
+                   href="{% url 'dashboard:payment_method_list' %}">
+                  <span class="nav-icon">
+                    <i class="fas fa-credit-card"></i>
+                  </span>
+                  <span class="nav-link-text">Payment Methods</span>
+                </a>
+              </li>
+              
+              <li class="nav-item">
+                <a class="nav-link {% if '/payment-verifications/' in request.path %}active{% endif %}" 
+                   href="{% url 'dashboard:payment_verification_list' %}">
+                  <span class="nav-icon">
+                    <i class="fas fa-file-invoice-dollar"></i>
+                  </span>
+                  <span class="nav-link-text">Payment Verification</span>
                 </a>
               </li>
             </ul>
@@ -410,16 +429,16 @@
                   </ul>
                 </div>
               </li>
-
-              <li class="nav-item">
-                <a class="nav-link {% if '/stream' in request.path %}active{% endif %}" 
-                   href="{% url 'dashboard:stream_home' %}">
+<li class="nav-item">
+                <a class="nav-link {% if '/enrollment' in request.path %}active{% endif %}" 
+                   href="{% url 'dashboard:enrollment_home' %}">
                   <span class="nav-icon">
-                    <i class="fas fa-layer-group"></i>
+                    <i class="fas fa-user-check"></i>
                   </span>
-                  <span class="nav-link-text">Streams</span>
+                  <span class="nav-link-text">Enrollments</span>
                 </a>
               </li>
+              
               
               
             </ul>

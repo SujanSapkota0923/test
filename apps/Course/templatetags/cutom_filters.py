@@ -36,3 +36,10 @@ def attr(obj, field_name):
         return getattr(obj, field_name)
     except (AttributeError, TypeError):
         return None
+
+@register.filter
+def get_item(dictionary, key):
+    """Get an item from a dictionary by key."""
+    if dictionary is None:
+        return None
+    return dictionary.get(key)

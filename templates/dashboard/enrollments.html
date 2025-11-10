@@ -12,57 +12,351 @@
 		    <div class="container-xl">
 			    
 			    <div class="d-flex justify-content-between align-items-center mb-4">
-    <h1 class="app-page-title mb-0">Enrollments</h1>
-    <div class="d-flex align-items-center gap-3">
-        <!-- <form class="table-search-form row gx-1 align-items-center">
-            <div class="col-auto">
-                <input type="text" id="search-orders" name="searchorders" class="form-control search-orders" placeholder="Search">
-            </div>
-            <div class="col-auto">
-                <button type="submit" class="btn app-btn-secondary">Search</button>
-            </div>
-        </form> -->
-        <a class="btn app-btn-primary text-nowrap" href="{% url 'add_enrollment' %}">Create New Enrollments</a>
-    </div>
-</div>
+				    <h1 class="app-page-title mb-0"><i class="fas fa-clipboard-list me-2"></i>Enrollments</h1>
+				    <div class="d-flex align-items-center gap-3">
+					    <div class="input-group" style="max-width: 300px;">
+						    <span class="input-group-text border-0 bg-transparent"><i class="fas fa-search text-muted"></i></span>
+						    <input type="text" id="enrollments-search" class="form-control border-0 shadow-none" placeholder="Search enrollments…" autocomplete="off" />
+						    <button type="button" class="btn btn-link px-2 clear-search" hidden><i class="fas fa-times-circle text-muted"></i></button>
+					    </div>
+				        <a class="btn app-btn-primary text-nowrap" href="{% url 'add_enrollment' %}"><i class="fas fa-plus me-2"></i>Create New Enrollment</a>
+				    </div>
+			    </div>
+
+			    <!-- Statistics Cards -->
+			    <div class="row g-3 mb-4">
+				    <div class="col-6 col-md-3">
+					    <div class="card shadow-sm border-0 h-100">
+						    <div class="card-body">
+							    <div class="d-flex align-items-center">
+								    <div class="flex-shrink-0">
+									    <div class="stat-icon bg-primary bg-opacity-10 text-primary rounded-circle p-3">
+										    <i class="fas fa-users fa-lg"></i>
+									    </div>
+								    </div>
+								    <div class="flex-grow-1 ms-3">
+									    <div class="text-muted small">Total Students</div>
+									    <div class="fs-4 fw-bold">{{ total_students }}</div>
+								    </div>
+							    </div>
+						    </div>
+					    </div>
+				    </div>
+				    <div class="col-6 col-md-3">
+					    <div class="card shadow-sm border-0 h-100">
+						    <div class="card-body">
+							    <div class="d-flex align-items-center">
+								    <div class="flex-shrink-0">
+									    <div class="stat-icon bg-success bg-opacity-10 text-success rounded-circle p-3">
+										    <i class="fas fa-check-circle fa-lg"></i>
+									    </div>
+								    </div>
+								    <div class="flex-grow-1 ms-3">
+									    <div class="text-muted small">Enrolled</div>
+									    <div class="fs-4 fw-bold">{{ enrolled_count }}</div>
+								    </div>
+							    </div>
+						    </div>
+					    </div>
+				    </div>
+				    <div class="col-6 col-md-3">
+					    <div class="card shadow-sm border-0 h-100">
+						    <div class="card-body">
+							    <div class="d-flex align-items-center">
+								    <div class="flex-shrink-0">
+									    <div class="stat-icon bg-warning bg-opacity-10 text-warning rounded-circle p-3">
+										    <i class="fas fa-exclamation-circle fa-lg"></i>
+									    </div>
+								    </div>
+								    <div class="flex-grow-1 ms-3">
+									    <div class="text-muted small">Not Enrolled</div>
+									    <div class="fs-4 fw-bold">{{ unenrolled_count }}</div>
+								    </div>
+							    </div>
+						    </div>
+					    </div>
+				    </div>
+				    <div class="col-6 col-md-3">
+					    <div class="card shadow-sm border-0 h-100">
+						    <div class="card-body">
+							    <div class="d-flex align-items-center">
+								    <div class="flex-shrink-0">
+									    <div class="stat-icon bg-info bg-opacity-10 text-info rounded-circle p-3">
+										    <i class="fas fa-user-check fa-lg"></i>
+									    </div>
+								    </div>
+								    <div class="flex-grow-1 ms-3">
+									    <div class="text-muted small">Active Enrolled</div>
+									    <div class="fs-4 fw-bold">{{ active_enrolled }}</div>
+								    </div>
+							    </div>
+						    </div>
+					    </div>
+				    </div>
+			    </div>
+
+			    <!-- Top Courses by Enrollment -->
+			    {% if enrollments_by_course %}
+			    <div class="card shadow-sm border-0 mb-4">
+				    <div class="card-header bg-light">
+					    <h5 class="mb-0"><i class="fas fa-trophy me-2"></i>Top 5 Courses by Enrollment</h5>
+				    </div>
+				    <div class="card-body">
+					    <div class="row g-2">
+						    {% for item in enrollments_by_course %}
+						    <div class="col-12 col-md-6 col-lg-4">
+							    <div class="d-flex align-items-center p-2 border rounded">
+								    <div class="flex-shrink-0 me-3">
+									    <span class="badge bg-primary rounded-circle" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;">{{ item.count }}</span>
+								    </div>
+								    <div class="flex-grow-1">
+									    <div class="fw-bold small">{{ item.course__title|truncatewords:4 }}</div>
+									    <div class="text-muted" style="font-size: 0.75rem;">{{ item.count }} student{{ item.count|pluralize }}</div>
+								    </div>
+							    </div>
+						    </div>
+						    {% endfor %}
+					    </div>
+				    </div>
+			    </div>
+			    {% endif %}
 				
-				
-				<div class="tab-content" id="orders-table-tab-content">
-			        <div class="tab-pane fade show active" id="orders-all" role="tabpanel" aria-labelledby="orders-all-tab">
-					    <div class="app-card app-card-orders-table shadow-sm mb-5">
-						    <div class="app-card-body">
-							    <div class="table-responsive">
-							        <table class="table app-table-hover mb-0 text-left">
+				<!-- Tabs for Enrolled/Not Enrolled -->
+				<ul class="nav nav-tabs mb-3" id="enrollmentTabs" role="tablist">
+					<li class="nav-item" role="presentation">
+						<button class="nav-link active" id="all-tab" data-bs-toggle="tab" data-bs-target="#all" type="button" role="tab">
+							<i class="fas fa-list me-2"></i>All Students ({{ total_students }})
+						</button>
+					</li>
+					<li class="nav-item" role="presentation">
+						<button class="nav-link" id="enrolled-tab" data-bs-toggle="tab" data-bs-target="#enrolled" type="button" role="tab">
+							<i class="fas fa-check-circle me-2"></i>Enrolled ({{ enrolled_count }})
+						</button>
+					</li>
+					<li class="nav-item" role="presentation">
+						<button class="nav-link" id="unenrolled-tab" data-bs-toggle="tab" data-bs-target="#unenrolled" type="button" role="tab">
+							<i class="fas fa-exclamation-circle me-2"></i>Not Enrolled ({{ unenrolled_count }})
+						</button>
+					</li>
+				</ul>
+
+				<div class="tab-content" id="enrollmentTabsContent">
+					<!-- All Students Tab -->
+					<div class="tab-pane fade show active" id="all" role="tabpanel">
+						<div class="app-card app-card-orders-table shadow-sm mb-5">
+							<div class="app-card-body">
+								<div class="table-responsive">
+									<table id="enrollments-table-all" class="table app-table-hover mb-0 text-left enrollments-table">
 										<thead>
 											<tr>
-												<th class="cell">S.N</th>
-												<th class="cell">Name</th>
-												<th class="cell">Class</th>
+												<th class="cell">Profile</th>
+												<th class="cell">Student Info</th>
+												<th class="cell">Academic Level</th>
+												<th class="cell">Enrollment Status</th>
 												<th class="cell">Status</th>
+												<th class="cell">Actions</th>
 											</tr>
 										</thead>
 										<tbody>
-											{% for enrollment in enrollmentss %}
+											{% for student in all_students %}
 											<tr>
-												<td class="cell">{{ forloop.counter }}</td>
-												<td class="cell"><span class="truncate">{{ enrollment.first_name }} {{ enrollment.last_name }}</span></td>
-												<td class="cell">{{ enrollment.academic_level }}</td>
-
-												{% if enrollment.is_active %}
-												<td><a class="btn btn-outline-success" href="{% url 'dashboard:enrollment_detail' enrollment.id %}">View</a></td>
-												{% else %}
-												<td><a class="btn btn-outline-secondary" href="{% url 'dashboard:enrollment_detail' enrollment.id %}">View</a></td>
-												{% endif %}
-												</tr>
+												<td class="cell">
+													{% if student.profile_picture %}
+														<img src="{{ student.profile_picture.url }}" alt="{{ student.username }}" class="rounded-circle" width="40" height="40">
+													{% else %}
+														<div class="bg-secondary bg-opacity-10 text-secondary rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+															<i class="fas fa-user"></i>
+														</div>
+													{% endif %}
+												</td>
+												<td class="cell">
+													<div class="fw-bold">{{ student.first_name }} {{ student.last_name }}</div>
+													<div class="small text-muted"><i class="fas fa-at"></i> {{ student.username }}</div>
+												</td>
+												<td class="cell">
+													{% if student.academic_level %}
+														<span class="badge bg-info bg-opacity-10 text-info">
+															<i class="fas fa-graduation-cap me-1"></i>{{ student.academic_level }}
+														</span>
+													{% else %}
+														<span class="badge bg-secondary">Not Assigned</span>
+													{% endif %}
+												</td>
+												<td class="cell">
+													{% if student.course %}
+														<div class="badge bg-success bg-opacity-10 text-success mb-1">
+															<i class="fas fa-check-circle me-1"></i>Enrolled
+														</div>
+														<div class="small text-muted">{{ student.course.title|truncatewords:3 }}</div>
+													{% else %}
+														<span class="badge bg-warning bg-opacity-10 text-warning">
+															<i class="fas fa-exclamation-circle me-1"></i>Not Enrolled
+														</span>
+													{% endif %}
+												</td>
+												<td class="cell">
+													{% if student.is_active %}
+														<span class="badge bg-success"><i class="fas fa-circle me-1" style="font-size: 0.5rem;"></i>Active</span>
+													{% else %}
+														<span class="badge bg-secondary"><i class="fas fa-circle me-1" style="font-size: 0.5rem;"></i>Inactive</span>
+													{% endif %}
+												</td>
+												<td class="cell">
+													<a class="btn btn-sm btn-outline-primary" href="{% url 'dashboard:enrollment_detail' student.id %}">
+														<i class="fas fa-eye me-1"></i>View
+													</a>
+												</td>
+											</tr>
 											{% endfor %}
 										</tbody>
 									</table>
-						        </div><!--//table-responsive-->
-						       
-						    </div><!--//app-card-body-->		
+								</div><!--//table-responsive-->
+							</div><!--//app-card-body-->		
 						</div><!--//app-card-->
-						
-	    
+					</div>
+
+					<!-- Enrolled Students Tab -->
+					<div class="tab-pane fade" id="enrolled" role="tabpanel">
+						<div class="app-card app-card-orders-table shadow-sm mb-5">
+							<div class="app-card-body">
+								<div class="table-responsive">
+									<table id="enrollments-table-enrolled" class="table app-table-hover mb-0 text-left enrollments-table">
+										<thead>
+											<tr>
+												<th class="cell">Profile</th>
+												<th class="cell">Student Info</th>
+												<th class="cell">Academic Level</th>
+												<th class="cell">Course</th>
+												<th class="cell">Status</th>
+												<th class="cell">Actions</th>
+											</tr>
+										</thead>
+										<tbody>
+											{% for student in enrolled_students %}
+											<tr>
+												<td class="cell">
+													{% if student.profile_picture %}
+														<img src="{{ student.profile_picture.url }}" alt="{{ student.username }}" class="rounded-circle" width="40" height="40">
+													{% else %}
+														<div class="bg-secondary bg-opacity-10 text-secondary rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+															<i class="fas fa-user"></i>
+														</div>
+													{% endif %}
+												</td>
+												<td class="cell">
+													<div class="fw-bold">{{ student.first_name }} {{ student.last_name }}</div>
+													<div class="small text-muted"><i class="fas fa-at"></i> {{ student.username }}</div>
+												</td>
+												<td class="cell">
+													{% if student.academic_level %}
+														<span class="badge bg-info bg-opacity-10 text-info">
+															<i class="fas fa-graduation-cap me-1"></i>{{ student.academic_level }}
+														</span>
+													{% else %}
+														<span class="badge bg-secondary">Not Assigned</span>
+													{% endif %}
+												</td>
+												<td class="cell">
+													<div class="fw-bold small">{{ student.course.title|truncatewords:4 }}</div>
+													<div class="text-muted" style="font-size: 0.75rem;">
+														{% if student.course.cost > 0 %}
+															<i class="fas fa-dollar-sign me-1"></i>${{ student.course.cost }}
+														{% else %}
+															<i class="fas fa-gift me-1"></i>FREE
+														{% endif %}
+													</div>
+												</td>
+												<td class="cell">
+													{% if student.is_active %}
+														<span class="badge bg-success"><i class="fas fa-circle me-1" style="font-size: 0.5rem;"></i>Active</span>
+													{% else %}
+														<span class="badge bg-secondary"><i class="fas fa-circle me-1" style="font-size: 0.5rem;"></i>Inactive</span>
+													{% endif %}
+												</td>
+												<td class="cell">
+													<a class="btn btn-sm btn-outline-primary" href="{% url 'dashboard:enrollment_detail' student.id %}">
+														<i class="fas fa-eye me-1"></i>View
+													</a>
+												</td>
+											</tr>
+											{% endfor %}
+										</tbody>
+									</table>
+								</div><!--//table-responsive-->
+							</div><!--//app-card-body-->		
+						</div><!--//app-card-->
+					</div>
+
+					<!-- Not Enrolled Students Tab -->
+					<div class="tab-pane fade" id="unenrolled" role="tabpanel">
+						<div class="app-card app-card-orders-table shadow-sm mb-5">
+							<div class="app-card-body">
+								<div class="table-responsive">
+									<table id="enrollments-table-unenrolled" class="table app-table-hover mb-0 text-left enrollments-table">
+										<thead>
+											<tr>
+												<th class="cell">Profile</th>
+												<th class="cell">Student Info</th>
+												<th class="cell">Academic Level</th>
+												<th class="cell">Joined Date</th>
+												<th class="cell">Status</th>
+												<th class="cell">Actions</th>
+											</tr>
+										</thead>
+										<tbody>
+											{% for student in unenrolled_students %}
+											<tr>
+												<td class="cell">
+													{% if student.profile_picture %}
+														<img src="{{ student.profile_picture.url }}" alt="{{ student.username }}" class="rounded-circle" width="40" height="40">
+													{% else %}
+														<div class="bg-warning bg-opacity-10 text-warning rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+															<i class="fas fa-user-clock"></i>
+														</div>
+													{% endif %}
+												</td>
+												<td class="cell">
+													<div class="fw-bold">{{ student.first_name }} {{ student.last_name }}</div>
+													<div class="small text-muted"><i class="fas fa-at"></i> {{ student.username }}</div>
+												</td>
+												<td class="cell">
+													{% if student.academic_level %}
+														<span class="badge bg-info bg-opacity-10 text-info">
+															<i class="fas fa-graduation-cap me-1"></i>{{ student.academic_level }}
+														</span>
+													{% else %}
+														<span class="badge bg-secondary">Not Assigned</span>
+													{% endif %}
+												</td>
+												<td class="cell">
+													<div class="small">
+														<i class="fas fa-calendar me-1"></i>{{ student.date_joined|date:"M d, Y" }}
+													</div>
+												</td>
+												<td class="cell">
+													{% if student.is_active %}
+														<span class="badge bg-success"><i class="fas fa-circle me-1" style="font-size: 0.5rem;"></i>Active</span>
+													{% else %}
+														<span class="badge bg-secondary"><i class="fas fa-circle me-1" style="font-size: 0.5rem;"></i>Inactive</span>
+													{% endif %}
+												</td>
+												<td class="cell">
+													<a class="btn btn-sm btn-outline-primary" href="{% url 'dashboard:enrollment_detail' student.id %}">
+														<i class="fas fa-eye me-1"></i>View
+													</a>
+												</td>
+											</tr>
+											{% endfor %}
+										</tbody>
+									</table>
+								</div><!--//table-responsive-->
+							</div><!--//app-card-body-->		
+						</div><!--//app-card-->
+					</div>
+				</div><!--//tab-content-->
+			</div><!--//container-xl-->
+		</div><!--//app-content-->
+	</div><!--//app-wrapper-->
 	    
 {% endblock %} 
 {% block extra_scripts %}
@@ -71,4 +365,46 @@
 
 <!-- Page Specific JS -->
 <script src="{% static 'dashboard/assets/js/app.js' %}"></script>
+
+<script>
+	// Lightweight client-side search
+	document.addEventListener('DOMContentLoaded', function() {
+		const searchInput = document.getElementById('enrollments-search');
+		const clearBtn = document.querySelector('.clear-search');
+		const tables = document.querySelectorAll('.enrollments-table');
+
+		if (searchInput && tables.length > 0) {
+			searchInput.addEventListener('input', function() {
+				const query = this.value.toLowerCase().trim();
+				if (clearBtn) clearBtn.hidden = !query;
+
+				// Search in all tabs
+				tables.forEach(table => {
+					const rows = table.querySelectorAll('tbody tr');
+					rows.forEach(row => {
+						const text = row.textContent.toLowerCase();
+						row.style.display = text.includes(query) ? '' : 'none';
+					});
+				});
+			});
+
+			if (clearBtn) {
+				clearBtn.addEventListener('click', function() {
+					searchInput.value = '';
+					searchInput.dispatchEvent(new Event('input'));
+					searchInput.focus();
+				});
+			}
+
+			// Re-trigger search when switching tabs
+			document.querySelectorAll('#enrollmentTabs button[data-bs-toggle="tab"]').forEach(tab => {
+				tab.addEventListener('shown.bs.tab', function() {
+					if (searchInput.value) {
+						searchInput.dispatchEvent(new Event('input'));
+					}
+				});
+			});
+		}
+	});
+</script>
 {% endblock %}

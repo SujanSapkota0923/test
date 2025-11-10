@@ -1,6 +1,6 @@
 
 from django import forms
-from .models import User, AcademicLevel, Stream, Subject, Enrollment, LiveClass, Course, Video
+from .models import User, AcademicLevel, Stream, Subject, LiveClass, Course, Video, PaymentMethod, PaymentVerification
 
 class UserForm(forms.ModelForm):
     password = forms.CharField(widget=forms.PasswordInput(attrs={
@@ -14,7 +14,7 @@ class UserForm(forms.ModelForm):
     
     class Meta:
         model = User
-        fields = ['username', 'first_name', 'last_name', 'email', 'phone', 'role', 'academic_level', 'bio', 'profile_picture']
+        fields = ['username', 'first_name', 'last_name', 'email', 'phone', 'role', 'academic_level', 'course', 'bio', 'profile_picture']
         widgets = {
             'username': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter username'}),
             'first_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter first name'}),
@@ -23,6 +23,7 @@ class UserForm(forms.ModelForm):
             'phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter phone number'}),
             'role': forms.Select(attrs={'class': 'form-select'}),
             'academic_level': forms.Select(attrs={'class': 'form-select'}),
+            'course': forms.Select(attrs={'class': 'form-select'}),
             'bio': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Enter bio'}),
             'profile_picture': forms.FileInput(attrs={'class': 'form-control'}),
         }
@@ -88,105 +89,27 @@ class SubjectForm(forms.ModelForm):
 
 
 class EnrollmentForm(forms.Form):
-    """Form to enroll a student into a Course (level optional)"""
+    """Form to enroll a student into a Course"""
     student = forms.ModelChoiceField(
-        queryset=User.objects.filter(role=User.Role.STUDENT),
+        queryset=User.objects.filter(role=User.Role.STUDENT, course__isnull=True),
         widget=forms.Select(attrs={'class': 'form-select'}),
         label='Student',
-        help_text='Select a student to enroll'
+        help_text='Select a student to enroll (only students not already enrolled)'
     )
     course = forms.ModelChoiceField(
         queryset=Course.objects.all(),
         widget=forms.Select(attrs={'class': 'form-select'}),
         label='Course',
-        help_text='Select the course/activity to enroll the student into'
-    )
-    level = forms.ModelChoiceField(
-        queryset=AcademicLevel.objects.all(),
-        widget=forms.Select(attrs={'class': 'form-select'}),
-        label='Class',
-        required=False,
-        help_text='Optional: select a class for this enrollment'
+        help_text='Select the course to enroll the student into'
     )
 
     def save(self):
-        """Create an Enrollment for the selected student and course/level"""
+        """Assign course to student"""
         student = self.cleaned_data['student']
         course = self.cleaned_data['course']
-        level = self.cleaned_data.get('level')
-        # create active enrollment; let model validation handle conflicts
-        enrollment = Enrollment.objects.create(student=student, course=course, level=level, is_active=True)
-        return enrollment
-
-
-class EnrollmentEditForm(forms.Form):
-    """Form to edit an existing student's class (student field is read-only)"""
-    student = forms.CharField(
-        widget=forms.TextInput(attrs={
-            'class': 'form-control', 
-            'readonly': 'readonly'
-        }),
-        label='Student',
-        help_text='Student cannot be changed',
-        required=False
-    )
-    level = forms.ModelChoiceField(
-        queryset=AcademicLevel.objects.all(),
-        widget=forms.Select(attrs={'class': 'form-select'}),
-    label='Class',
-    help_text='Select the new class for this student'
-    )
-    
-    def __init__(self, *args, user_instance=None, **kwargs):
-        super().__init__(*args, **kwargs)
-        if user_instance:
-            # Set the student field to display the user's full name
-            student_name = user_instance.get_full_name() or user_instance.username
-            self.fields['student'].initial = student_name
-            # Set the current academic level
-            if user_instance.academic_level:
-                self.fields['level'].initial = user_instance.academic_level
-            self.user_instance = user_instance
-        
-        # Make student field read-only by preventing it from being changed
-        self.fields['student'].widget.attrs['readonly'] = 'readonly'
-        self.fields['student'].widget.attrs['style'] = 'background-color: #e9ecef; cursor: not-allowed;'
-    
-    def save(self):
-        """Update the user's academic_level field"""
-        level = self.cleaned_data['level']
-        self.user_instance.academic_level = level
-        self.user_instance.save()
-        return self.user_instance
-
-
-class EnrollmentModelForm(forms.ModelForm):
-    """Original enrollment form (kept for backward compatibility if needed)"""
-    labels = {
-            'level': 'Class', 
-        }
-    class Meta:
-        model = Enrollment
-        fields = ['student', 'course', 'level', 'is_active']
-        
-        widgets = {
-            'student': forms.Select(attrs={'class': 'form-select'}),
-            'level': forms.Select(attrs={'class': 'form-select'}),
-            'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-        }
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # If editing an existing enrollment, make the student field read-only so it cannot be changed here
-        if self.instance and getattr(self.instance, 'pk', None):
-            # disable changing student on edit
-            if 'student' in self.fields:
-                self.fields['student'].disabled = True
-                self.fields['student'].widget.attrs.update({'readonly': 'readonly', 'style': 'background-color: #e9ecef; cursor: not-allowed;'})
-
-        # For backward compatibility we do not prevent selecting students who have other active enrollments
-        # when creating new enrollments, because course-based enrollments are allowed to be multiple. If you
-        # want to restrict this list, customize the filtering here.
+        student.course = course
+        student.save()
+        return student
 
             
 class LiveClassForm(forms.ModelForm):
@@ -242,4 +165,138 @@ class VideoUploadForm(forms.ModelForm):
             'teacher': forms.Select(attrs={'class': 'form-select', 'placeholder': 'Select teacher'}),
             'cost': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Enter cost (Blank for free)'}),
             'image': forms.ClearableFileInput(attrs={'class': 'form-control'}),
+        }
+
+
+class PaymentMethodForm(forms.ModelForm):
+    class Meta:
+        model = PaymentMethod
+        fields = ['name', 'description', 'details', 'image', 'is_active', 'display_order']
+        widgets = {
+            'name': forms.TextInput(attrs={
+                'class': 'form-control', 
+                'placeholder': 'Enter payment method name (e.g., Bank Transfer, Khalti, eSewa)'
+            }),
+            'description': forms.Textarea(attrs={
+                'class': 'form-control', 
+                'rows': 3, 
+                'placeholder': 'Enter description and instructions'
+            }),
+            'details': forms.Textarea(attrs={
+                'class': 'form-control', 
+                'rows': 4,
+                'placeholder': 'Enter JSON details (e.g., {"account_number": "12345", "account_name": "School Name"})'
+            }),
+            'image': forms.ClearableFileInput(attrs={
+                'class': 'form-control',
+                'accept': 'image/*'
+            }),
+            'is_active': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            }),
+            'display_order': forms.NumberInput(attrs={
+                'class': 'form-control', 
+                'placeholder': 'Enter display order (lower numbers appear first)'
+            }),
+        }
+        help_texts = {
+            'details': 'Optional JSON data for account info, QR codes, etc.',
+            'display_order': 'Payment methods are sorted by this order',
+        }
+    
+    def clean_details(self):
+        """Validate JSON field"""
+        import json
+        details = self.cleaned_data.get('details')
+        if details:
+            try:
+                if isinstance(details, str):
+                    json.loads(details)
+            except json.JSONDecodeError:
+                raise forms.ValidationError('Invalid JSON format. Please use valid JSON syntax.')
+        return details
+
+
+class PaymentVerificationForm(forms.ModelForm):
+    class Meta:
+        model = PaymentVerification
+        fields = ['course', 'payment_method', 'amount', 'transaction_id', 'payment_proof', 'remarks']
+        widgets = {
+            'course': forms.Select(attrs={
+                'class': 'form-select',
+                'required': True
+            }),
+            'payment_method': forms.Select(attrs={
+                'class': 'form-select',
+                'required': True
+            }),
+            'amount': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': '0',
+                'step': '0.01',
+                'placeholder': 'Enter amount paid'
+            }),
+            'transaction_id': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Enter transaction ID or reference number (optional)'
+            }),
+            'payment_proof': forms.FileInput(attrs={
+                'class': 'form-control',
+                'accept': 'image/*'
+            }),
+            'remarks': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Add any additional notes about your payment...'
+            }),
+        }
+        help_texts = {
+            'course': 'Select the course you want to purchase',
+            'payment_method': 'Select the payment method you used',
+            'amount': 'Enter the exact amount you paid',
+            'transaction_id': 'Optional: Your transaction ID from the payment provider',
+            'payment_proof': 'Upload a screenshot or photo of your payment receipt',
+            'remarks': 'Optional: Any additional information about the payment',
+        }
+    
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        # Only show active payment methods
+        self.fields['payment_method'].queryset = PaymentMethod.objects.filter(is_active=True)
+        # Only show courses the user hasn't enrolled in
+        if self.user:
+            self.fields['course'].queryset = Course.objects.exclude(enrolled_students=self.user)
+    
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        if self.user:
+            instance.user = self.user
+        if commit:
+            instance.save()
+        return instance
+
+
+class PaymentVerificationAdminForm(forms.ModelForm):
+    """Form for admin to verify payments"""
+    class Meta:
+        model = PaymentVerification
+        fields = ['verification_notes', 'verified']
+        widgets = {
+            'verification_notes': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 4,
+                'placeholder': 'Add verification notes...'
+            }),
+            'verified': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            }),
+        }
+        labels = {
+            'verification_notes': 'Admin Notes',
+            'verified': 'Approve Payment',
+        }
+        help_texts = {
+            'verification_notes': 'Add any notes about the verification process',
+            'verified': 'Check this box to approve the payment and enroll the user in the course',
         }

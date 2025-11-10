@@ -5,9 +5,9 @@ from django.shortcuts import render
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from .models import User, AcademicLevel, Stream, Subject, Enrollment, LiveClass, Course
+from .models import User, AcademicLevel, Stream, Subject, LiveClass, Course, PaymentMethod
 from .forms import (UserForm, AcademicLevelForm, StreamForm, SubjectForm, 
-                    EnrollmentForm, LiveClassForm, CourseForm, VideoUploadForm)
+                    LiveClassForm, CourseForm, VideoUploadForm)
 
 
 # Generic Add View
@@ -91,36 +91,19 @@ def add_subject(request):
 
 @login_required
 def add_enrollment(request):
+    from .forms import EnrollmentForm
     if request.method == 'POST':
         form = EnrollmentForm(request.POST)
-        # if a course is selected, exclude students already active in that course
-        course_id = request.POST.get('course')
-        if course_id:
-            enrolled_student_ids = Enrollment.objects.filter(course_id=course_id, is_active=True).values_list('student_id', flat=True)
-            form.fields['student'].queryset = User.objects.filter(role=User.Role.STUDENT).exclude(id__in=enrolled_student_ids)
-
         if form.is_valid():
-            try:
-                enrollment = form.save()
-            except Exception as exc:
-                # Model validation (capacity/duplicate) bubbled up; show friendly error
-                from django.core.exceptions import ValidationError
-                if isinstance(exc, ValidationError):
-                    form.add_error(None, exc.message_dict if hasattr(exc, 'message_dict') else exc.messages)
-                    messages.error(request, f"Could not create enrollment: {exc}")
-                else:
-                    messages.error(request, f"Could not create enrollment: {exc}")
-                return render(request, 'dashboard/add_item.html', {'form': form, 'item_name': 'Student Class', 'back_url': 'enrollment_list'})
-
-            student = enrollment.student
-            messages.success(request, f'Enrollment created for {student.username} successfully!')
+            student = form.save()
+            messages.success(request, f'{student.get_full_name() or student.username} has been enrolled in {student.course.title}!')
             return redirect('dashboard:enrollment_home')
     else:
         form = EnrollmentForm()
     
     context = {
         'form': form,
-        'item_name': 'Student Class',
+        'item_name': 'Enroll Student',
         'back_url': 'enrollment_list',
     }
     return render(request, 'dashboard/add_item.html', context)

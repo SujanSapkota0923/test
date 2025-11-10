@@ -32,10 +32,53 @@
 								<div class="stat-info">
 									<div class="stat-label">Students</div>
 									<div class="stat-value">{{ student_count }}</div>
+									<div class="stat-meta">
+										<small class="text-success"><i class="fas fa-check-circle"></i> {{ enrolled_students }} enrolled</small>
+									</div>
 								</div>
 							</div>
 						</div>
 						<a href="{% url 'dashboard:student_home' %}" class="stretched-link"></a>
+					</div>
+				</div>
+
+				<div class="col-6 col-lg-3">
+					<div class="stat-card-modern">
+						<div class="stat-card-body">
+							<div class="d-flex align-items-center gap-3">
+								<div class="stat-icon-modern">
+									<i class="fas fa-chalkboard-teacher"></i>
+								</div>
+								<div class="stat-info">
+									<div class="stat-label">Teachers</div>
+									<div class="stat-value">{{ teacher_count }}</div>
+									<div class="stat-meta">
+										<small class="text-info"><i class="fas fa-user-check"></i> {{ active_teachers }} active</small>
+									</div>
+								</div>
+							</div>
+						</div>
+						<a href="{% url 'dashboard:teacher_home' %}" class="stretched-link"></a>
+					</div>
+				</div>
+
+				<div class="col-6 col-lg-3">
+					<div class="stat-card-modern">
+						<div class="stat-card-body">
+							<div class="d-flex align-items-center gap-3">
+								<div class="stat-icon-modern">
+									<i class="fas fa-graduation-cap"></i>
+								</div>
+								<div class="stat-info">
+									<div class="stat-label">Courses</div>
+									<div class="stat-value">{{ extra_activity_count }}</div>
+									<div class="stat-meta">
+										<small class="text-primary"><i class="fas fa-users"></i> {{ total_enrollments }} enrolled</small>
+									</div>
+								</div>
+							</div>
+						</div>
+						<a href="{% url 'dashboard:course_home' %}" class="stretched-link"></a>
 					</div>
 				</div>
 
@@ -49,43 +92,154 @@
 								<div class="stat-info">
 									<div class="stat-label">Videos</div>
 									<div class="stat-value">{{ video_count }}</div>
+									<div class="stat-meta">
+										<small class="text-success"><i class="fas fa-gift"></i> {{ free_videos }} free</small>
+									</div>
 								</div>
 							</div>
 						</div>
 						<a href="{% url 'dashboard:video_home' %}" class="stretched-link"></a>
 					</div>
 				</div>
+			</div>
 
+			<!-- Additional Statistics Row -->
+			<div class="row g-4 mb-4">
 				<div class="col-6 col-lg-3">
-					<div class="stat-card-modern">
-						<div class="stat-card-body">
-							<div class="d-flex align-items-center gap-3">
-								<div class="stat-icon-modern">
-									<i class="fas fa-users"></i>
+					<div class="card shadow-sm border-0 h-100">
+						<div class="card-body">
+							<div class="d-flex align-items-center">
+								<div class="flex-shrink-0">
+									<div class="stat-icon bg-primary bg-opacity-10 text-primary rounded-circle p-3">
+										<i class="fas fa-book fa-lg"></i>
+									</div>
 								</div>
-								<div class="stat-info">
-									<div class="stat-label">Total Users</div>
-									<div class="stat-value">{{ total }}</div>
+								<div class="flex-grow-1 ms-3">
+									<div class="text-muted small">Subjects</div>
+									<div class="fs-4 fw-bold">{{ subject_count }}</div>
 								</div>
 							</div>
 						</div>
 					</div>
 				</div>
-
 				<div class="col-6 col-lg-3">
-					<div class="stat-card-modern">
-						<div class="stat-card-body">
-							<div class="d-flex align-items-center gap-3">
-								<div class="stat-icon-modern">
-									<i class="fas fa-book"></i>
+					<div class="card shadow-sm border-0 h-100">
+						<div class="card-body">
+							<div class="d-flex align-items-center">
+								<div class="flex-shrink-0">
+									<div class="stat-icon bg-danger bg-opacity-10 text-danger rounded-circle p-3">
+										<i class="fas fa-video fa-lg"></i>
+									</div>
 								</div>
-								<div class="stat-info">
-									<div class="stat-label">Subjects</div>
-									<div class="stat-value">{{ subject_count }}</div>
+								<div class="flex-grow-1 ms-3">
+									<div class="text-muted small">Live Classes</div>
+									<div class="fs-4 fw-bold">{{ live_class_count }}</div>
+									{% if live_now_count > 0 %}
+										<small class="text-danger"><i class="fas fa-circle" style="font-size: 0.5rem;"></i> {{ live_now_count }} live now</small>
+									{% endif %}
 								</div>
 							</div>
 						</div>
-						<a href="{% url 'dashboard:subject_home' %}" class="stretched-link"></a>
+					</div>
+				</div>
+				<div class="col-6 col-lg-3">
+					<div class="card shadow-sm border-0 h-100">
+						<div class="card-body">
+							<div class="d-flex align-items-center">
+								<div class="flex-shrink-0">
+									<div class="stat-icon bg-success bg-opacity-10 text-success rounded-circle p-3">
+										<i class="fas fa-dollar-sign fa-lg"></i>
+									</div>
+								</div>
+								<div class="flex-grow-1 ms-3">
+									<div class="text-muted small">Total Revenue</div>
+									<div class="fs-4 fw-bold">${{ total_revenue|floatformat:0 }}</div>
+									<small class="text-muted">{{ verified_payments }} verified</small>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="col-6 col-lg-3">
+					<div class="card shadow-sm border-0 h-100">
+						<div class="card-body">
+							<div class="d-flex align-items-center">
+								<div class="flex-shrink-0">
+									<div class="stat-icon bg-warning bg-opacity-10 text-warning rounded-circle p-3">
+										<i class="fas fa-clock fa-lg"></i>
+									</div>
+								</div>
+								<div class="flex-grow-1 ms-3">
+									<div class="text-muted small">Pending Payments</div>
+									<div class="fs-4 fw-bold">{{ pending_payments }}</div>
+									<small class="text-muted">Need verification</small>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Recent Activity Stats -->
+			<div class="row g-4 mb-4">
+				<div class="col-md-6 col-lg-3">
+					<div class="card shadow-sm border-0 h-100 border-start border-primary border-3">
+						<div class="card-body">
+							<div class="d-flex justify-content-between align-items-center">
+								<div>
+									<div class="text-muted small mb-1">New Students (7 days)</div>
+									<div class="fs-3 fw-bold text-primary">{{ new_students_week }}</div>
+								</div>
+								<div class="text-primary opacity-50">
+									<i class="fas fa-user-plus fa-2x"></i>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="col-md-6 col-lg-3">
+					<div class="card shadow-sm border-0 h-100 border-start border-info border-3">
+						<div class="card-body">
+							<div class="d-flex justify-content-between align-items-center">
+								<div>
+									<div class="text-muted small mb-1">New Teachers (7 days)</div>
+									<div class="fs-3 fw-bold text-info">{{ new_teachers_week }}</div>
+								</div>
+								<div class="text-info opacity-50">
+									<i class="fas fa-chalkboard-teacher fa-2x"></i>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="col-md-6 col-lg-3">
+					<div class="card shadow-sm border-0 h-100 border-start border-success border-3">
+						<div class="card-body">
+							<div class="d-flex justify-content-between align-items-center">
+								<div>
+									<div class="text-muted small mb-1">Free Courses</div>
+									<div class="fs-3 fw-bold text-success">{{ free_courses }}</div>
+								</div>
+								<div class="text-success opacity-50">
+									<i class="fas fa-gift fa-2x"></i>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="col-md-6 col-lg-3">
+					<div class="card shadow-sm border-0 h-100 border-start border-warning border-3">
+						<div class="card-body">
+							<div class="d-flex justify-content-between align-items-center">
+								<div>
+									<div class="text-muted small mb-1">Academic Levels</div>
+									<div class="fs-3 fw-bold text-warning">{{ level_count }}</div>
+								</div>
+								<div class="text-warning opacity-50">
+									<i class="fas fa-layer-group fa-2x"></i>
+								</div>
+							</div>
+						</div>
 					</div>
 				</div>
 			</div>

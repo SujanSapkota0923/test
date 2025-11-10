@@ -8,7 +8,7 @@
 		<div class="container-xl">
 
 			<div class="d-flex justify-content-between align-items-center mb-4">
-				<h1 class="app-page-title mb-0">Students</h1>
+				<h1 class="app-page-title mb-0"><i class="fas fa-user-graduate me-2"></i>Students</h1>
 				<div class="d-flex align-items-center gap-3">
 					<form class="table-search-form row gx-2 align-items-center" method="get" action="">
 						<div class="col-auto">
@@ -22,7 +22,79 @@
 							<button type="submit" class="btn app-btn-secondary">Search</button>
 						</div>
 					</form>
-					<a class="btn app-btn-primary text-nowrap" href="{% url 'add_user' %}">Create New Student</a>
+					<a class="btn app-btn-primary text-nowrap" href="{% url 'add_user' %}"><i class="fas fa-plus me-2"></i>Create New Student</a>
+				</div>
+			</div>
+
+			<!-- Statistics Cards -->
+			<div class="row g-3 mb-4">
+				<div class="col-6 col-md-3">
+					<div class="card shadow-sm border-0 h-100">
+						<div class="card-body">
+							<div class="d-flex align-items-center">
+								<div class="flex-shrink-0">
+									<div class="stat-icon bg-primary bg-opacity-10 text-primary rounded-circle p-3">
+										<i class="fas fa-users fa-lg"></i>
+									</div>
+								</div>
+								<div class="flex-grow-1 ms-3">
+									<div class="text-muted small">Total Students</div>
+									<div class="fs-4 fw-bold">{{ student_count }}</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="col-6 col-md-3">
+					<div class="card shadow-sm border-0 h-100">
+						<div class="card-body">
+							<div class="d-flex align-items-center">
+								<div class="flex-shrink-0">
+									<div class="stat-icon bg-success bg-opacity-10 text-success rounded-circle p-3">
+										<i class="fas fa-check-circle fa-lg"></i>
+									</div>
+								</div>
+								<div class="flex-grow-1 ms-3">
+									<div class="text-muted small">Enrolled</div>
+									<div class="fs-4 fw-bold">{{ enrolled_students }}</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="col-6 col-md-3">
+					<div class="card shadow-sm border-0 h-100">
+						<div class="card-body">
+							<div class="d-flex align-items-center">
+								<div class="flex-shrink-0">
+									<div class="stat-icon bg-info bg-opacity-10 text-info rounded-circle p-3">
+										<i class="fas fa-user-check fa-lg"></i>
+									</div>
+								</div>
+								<div class="flex-grow-1 ms-3">
+									<div class="text-muted small">Active</div>
+									<div class="fs-4 fw-bold">{{ active_students }}</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="col-6 col-md-3">
+					<div class="card shadow-sm border-0 h-100">
+						<div class="card-body">
+							<div class="d-flex align-items-center">
+								<div class="flex-shrink-0">
+									<div class="stat-icon bg-warning bg-opacity-10 text-warning rounded-circle p-3">
+										<i class="fas fa-hourglass-half fa-lg"></i>
+									</div>
+								</div>
+								<div class="flex-grow-1 ms-3">
+									<div class="text-muted small">Not Enrolled</div>
+									<div class="fs-4 fw-bold">{{ student_count|add:"-"|add:enrolled_students }}</div>
+								</div>
+							</div>
+						</div>
+					</div>
 				</div>
 			</div>
 
@@ -34,28 +106,79 @@
 								<table id="students-table" class="table app-table-hover mb-0 text-left">
 									<thead>
 										<tr>
-											<th class="cell">S.N</th>
-											<th class="cell">Name</th>
-											<th class="cell">Username</th>
-											<th class="cell">Phone</th>
-											<th class="cell">Class</th>
+											<th class="cell">Profile</th>
+											<th class="cell">Student Info</th>
+											<th class="cell">Contact</th>
+											<th class="cell">Academic Level</th>
+											<th class="cell">Enrollment Status</th>
+											<th class="cell">Status</th>
 											<th class="cell">Actions</th>
 										</tr>
 									</thead>
 									<tbody>
 										{% for student in students %}
 										<tr>
-											<td class="cell">{{ forloop.counter }}</td>
-											<td class="cell"><span class="truncate">{{student.first_name}} {{student.last_name}}</span></td>
-											<td class="cell">{{student.username}}</td>
-											<td class="cell">{{student.phone}}</td>
-											<td class="cell">{{student.academic_level}}</td>
-<td class="cell"><a class="btn btn-outline-secondary" href="{% url 'dashboard:user_detail' student.id %}">View</a></td>
+											<td class="cell">
+												{% if student.profile_picture %}
+													<img src="{{ student.profile_picture.url }}" alt="{{ student.username }}" class="rounded-circle" width="40" height="40">
+												{% else %}
+													<div class="bg-secondary bg-opacity-10 text-secondary rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+														<i class="fas fa-user"></i>
+													</div>
+												{% endif %}
+											</td>
+											<td class="cell">
+												<div class="fw-bold">{{student.first_name}} {{student.last_name}}</div>
+												<div class="small text-muted"><i class="fas fa-at"></i> {{student.username}}</div>
+											</td>
+											<td class="cell">
+												<div class="small">
+													{% if student.email %}
+														<i class="fas fa-envelope me-1"></i>{{ student.email|truncatewords:2 }}<br>
+													{% endif %}
+													{% if student.phone %}
+														<i class="fas fa-phone me-1"></i>{{student.phone}}
+													{% endif %}
+												</div>
+											</td>
+											<td class="cell">
+												{% if student.academic_level %}
+													<span class="badge bg-info bg-opacity-10 text-info">
+														<i class="fas fa-graduation-cap me-1"></i>{{student.academic_level}}
+													</span>
+												{% else %}
+													<span class="badge bg-secondary">Not Assigned</span>
+												{% endif %}
+											</td>
+											<td class="cell">
+												{% if student.course %}
+													<div class="badge bg-success bg-opacity-10 text-success">
+														<i class="fas fa-check-circle me-1"></i>Enrolled
+													</div>
+													<div class="small text-muted mt-1">{{ student.course.title|truncatewords:3 }}</div>
+												{% else %}
+													<span class="badge bg-warning bg-opacity-10 text-warning">
+														<i class="fas fa-exclamation-circle me-1"></i>Not Enrolled
+													</span>
+												{% endif %}
+											</td>
+											<td class="cell">
+												{% if student.is_active %}
+													<span class="badge bg-success"><i class="fas fa-circle me-1" style="font-size: 0.5rem;"></i>Active</span>
+												{% else %}
+													<span class="badge bg-secondary"><i class="fas fa-circle me-1" style="font-size: 0.5rem;"></i>Inactive</span>
+												{% endif %}
+											</td>
+											<td class="cell">
+												<a class="btn btn-sm btn-outline-primary" href="{% url 'dashboard:user_detail' student.id %}">
+													<i class="fas fa-eye me-1"></i>View
+												</a>
+											</td>
 										</tr>
 										{%endfor%}
 
 										<tr class="no-results d-none">
-											<td colspan="6" class="text-center text-muted">No matching students</td>
+											<td colspan="7" class="text-center text-muted">No matching students</td>
 										</tr>
 
 
@@ -89,34 +212,57 @@
 
 <!-- Page Specific JS -->
 <script src="{% static 'dashboard/assets/js/app.js' %}"></script>
+
 <script>
-	// Client-side filter to improve UX; server can still handle GET q later
-	(function(){
-		const input = document.getElementById('students-search');
-		const clearBtn = document.querySelector('.clear-students-search');
+	// Lightweight client-side search functionality
+	document.addEventListener('DOMContentLoaded', function() {
+		const searchInput = document.getElementById('students-search');
+		const clearButton = document.querySelector('.clear-students-search');
 		const table = document.getElementById('students-table');
-		if (!input || !table) return;
+		const noResultsRow = document.querySelector('.no-results');
 
-		const tbody = table.querySelector('tbody');
-		const noResultsRow = tbody.querySelector('.no-results');
+		if (searchInput && table) {
+			searchInput.addEventListener('input', function(e) {
+				e.preventDefault();
+				const query = this.value.toLowerCase().trim();
+				clearButton.hidden = !query;
 
-		const filter = () => {
-			const q = (input.value || '').toLowerCase().trim();
-			let visible = 0;
-			tbody.querySelectorAll('tr').forEach(tr => {
-				if (tr.classList.contains('no-results')) return; // skip helper row
-				const text = tr.innerText.toLowerCase();
-				const match = !q || text.indexOf(q) !== -1;
-				tr.style.display = match ? '' : 'none';
-				if (match) visible++;
+				const rows = table.querySelectorAll('tbody tr:not(.no-results)');
+				let matchCount = 0;
+
+				rows.forEach(row => {
+					const text = row.textContent.toLowerCase();
+					if (text.includes(query)) {
+						row.style.display = '';
+						matchCount++;
+					} else {
+						row.style.display = 'none';
+					}
+				});
+
+				if (noResultsRow) {
+					noResultsRow.classList.toggle('d-none', matchCount > 0);
+				}
 			});
-			if (noResultsRow) noResultsRow.classList.toggle('d-none', visible !== 0);
-			if (clearBtn) clearBtn.hidden = q.length === 0;
-		};
 
-		input.addEventListener('input', filter);
-		if (clearBtn) clearBtn.addEventListener('click', () => { input.value=''; input.focus(); filter(); });
-		filter();
-	})();
+			if (clearButton) {
+				clearButton.addEventListener('click', function() {
+					searchInput.value = '';
+					searchInput.dispatchEvent(new Event('input'));
+					searchInput.focus();
+				});
+			}
+
+			// Prevent form submission
+			const searchForm = searchInput.closest('form');
+			if (searchForm) {
+				searchForm.addEventListener('submit', function(e) {
+					e.preventDefault();
+					return false;
+				});
+			}
+		}
+	});
 </script>
+
 {% endblock %}

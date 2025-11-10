@@ -136,6 +136,23 @@
                                                                     <i class="fas fa-download me-1"></i>
                                                                     Download
                                                                 </a>
+                                                            {% elif field.name == 'details' and payment_method %}
+                                                                {# Special handling for payment method details JSON field #}
+                                                                {% if field.value %}
+                                                                    <div class="card border-info">
+                                                                        <div class="card-body p-3">
+                                                                            <h6 class="mb-2"><i class="fas fa-info-circle me-2"></i>Payment Details:</h6>
+                                                                            {% for key, value in field.value.items %}
+                                                                                <div class="row mb-1">
+                                                                                    <div class="col-5 text-muted">{{ key }}:</div>
+                                                                                    <div class="col-7 fw-semibold">{{ value }}</div>
+                                                                                </div>
+                                                                            {% endfor %}
+                                                                        </div>
+                                                                    </div>
+                                                                {% else %}
+                                                                    <span class="text-muted fst-italic"><i class="fas fa-info-circle me-1"></i>No details provided</span>
+                                                                {% endif %}
                                                             {% elif field.field.widget.input_type == 'select' %}
                                                                 {# ForeignKey field - show object name #}
                                                                 <span class="badge badge-info-custom">{{ object|get_display_value:field.name }}</span>
@@ -352,6 +369,78 @@
                         <div class="form-decoration form-decoration-1"></div>
                         <div class="form-decoration form-decoration-2"></div>
                     </div><!--//detail-item-form-card-->
+
+                    <!-- Enrolled Students Section -->
+                    {% if item_name == 'Activity' %}
+                    <div class="detail-item-form-card mb-4 position-relative">
+                        <div class="card border-0 shadow-lg">
+                            <div class="card-header bg-gradient-success text-white p-4 border-0">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <div class="d-flex align-items-center">
+                                        <div class="icon-box me-3">
+                                            <i class="fas fa-users"></i>
+                                        </div>
+                                        <div>
+                                            <h4 class="mb-0 fw-bold">Enrolled Students</h4>
+                                            <small class="opacity-75">Students currently enrolled in this course</small>
+                                        </div>
+                                    </div>
+                                    <span class="badge bg-light text-dark fs-5 px-3 py-2">
+                                        {{ enrolled_count }} Student{{ enrolled_count|pluralize }}
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <div class="card-body p-4">
+                                {% if enrolled_students %}
+                                    <div class="row g-3">
+                                        {% for student in enrolled_students %}
+                                            <div class="col-12 col-md-6 col-lg-4">
+                                                <div class="student-card p-3 border rounded-3 h-100 hover-shadow transition-all">
+                                                    <div class="d-flex align-items-center">
+                                                        <div class="student-avatar me-3">
+                                                            {% if student.profile_picture %}
+                                                                <img src="{{ student.profile_picture.url }}" alt="{{ student.get_full_name }}" class="rounded-circle" style="width: 50px; height: 50px; object-fit: cover;">
+                                                            {% else %}
+                                                                <div class="avatar-placeholder rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                                                                    <span class="fw-bold">{{ student.first_name|slice:":1" }}{{ student.last_name|slice:":1" }}</span>
+                                                                </div>
+                                                            {% endif %}
+                                                        </div>
+                                                        <div class="flex-grow-1">
+                                                            <h6 class="mb-1 fw-semibold">
+                                                                <a href="{% url 'dashboard:user_detail' student.pk %}" class="text-decoration-none text-dark hover-primary">
+                                                                    {{ student.get_full_name|default:student.username }}
+                                                                </a>
+                                                            </h6>
+                                                            <p class="mb-0 small text-muted">
+                                                                <i class="fas fa-user-circle me-1"></i>{{ student.username }}
+                                                            </p>
+                                                            {% if student.academic_level %}
+                                                                <span class="badge bg-info-subtle text-info mt-1">
+                                                                    <i class="fas fa-graduation-cap me-1"></i>{{ student.academic_level.name }}
+                                                                </span>
+                                                            {% endif %}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                {% else %}
+                                    <div class="text-center py-5">
+                                        <i class="fas fa-user-slash text-muted mb-3" style="font-size: 3rem; opacity: 0.3;"></i>
+                                        <p class="text-muted mb-0">
+                                            <strong>No students enrolled yet</strong><br>
+                                            <small>Students will appear here once they enroll in this course</small>
+                                        </p>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
                 </div><!--//col-->
             </div><!--//row-->
 
@@ -740,6 +829,38 @@
 
 .modern-modal .modal-footer {
     border-top: none;
+}
+
+/* Enrolled Students Section */
+.bg-gradient-success {
+    background: linear-gradient(135deg, #10b981 0%, #34d399 100%) !important;
+}
+
+.student-card {
+    background: #fff;
+    transition: all 0.3s ease;
+}
+
+.student-card:hover {
+    transform: translateY(-3px);
+    border-color: #15a362 !important;
+}
+
+.hover-shadow:hover {
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1) !important;
+}
+
+.hover-primary:hover {
+    color: #15a362 !important;
+}
+
+.transition-all {
+    transition: all 0.3s ease;
+}
+
+.avatar-placeholder {
+    font-size: 18px;
+    font-weight: 600;
 }
 </style>
 

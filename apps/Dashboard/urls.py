@@ -8,7 +8,7 @@ app_name = 'dashboard'
 urlpatterns = [
     path('', views.dashboard_view, name='index'),
     path('search/', views.global_search_view, name='global_search'),
-    path('course/', views.course_home_view, name='course_home'),
+    path('courses/', views.course_home_view, name='course_home'),
     path('subjects/', views.subject_list_view, name='subject_home'),
     path('students/', views.student_list_view, name='student_home'),
     path('teachers/', views.teacher_list_view, name='teacher_home'),
@@ -16,6 +16,20 @@ urlpatterns = [
     path('enrollments/', views.enrollment_list_view, name='enrollment_home'),
     path('live/', views.live_classes_view, name='live_classes'),
     path('videos/', views.video_list_view, name='video_home'),
+    path('payments/', views.payment_method_list, name='payment_method_list'),
+    path('payments/add/', views.add_payment_method, name='add_payment_method'),
+    path('payments/<int:pk>/', views.payment_method_detail, name='payment_method_detail'),
+    path('payments/<int:pk>/edit/', views.edit_payment_method, name='edit_payment_method'),
+    path('payments/<int:pk>/delete/', views.delete_payment_method, name='delete_payment_method'),
+    
+    # Payment Verification URLs
+    path('payment-verifications/', views.payment_verification_list, name='payment_verification_list'),
+    path('payment-verifications/add/', views.add_payment_verification, name='add_payment_verification'),
+    path('payment-verifications/my/', views.my_payment_verifications, name='my_payment_verifications'),
+    path('payment-verifications/<int:pk>/', views.payment_verification_detail, name='payment_verification_detail'),
+    path('payment-verifications/<int:pk>/verify/', views.verify_payment, name='verify_payment'),
+    path('payment-verifications/<int:pk>/delete/', views.delete_payment_verification, name='delete_payment_verification'),
+    
     path('class/<slug:level_slug>/', views.class_level_view, name='class_level'),
 
 
