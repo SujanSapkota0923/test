@@ -1,0 +1,723 @@
+/* ============================================
+   RESPONSIVE DESIGN FOR ALL SCREEN SIZES
+   ============================================ */
+
+/* Base Responsive Typography */
+html {
+    font-size: 16px;
+}
+
+/* ============================================
+   EXTRA LARGE SCREENS (1400px and up)
+   ============================================ */
+@media (min-width: 1400px) {
+    .container-xl {
+        max-width: 1320px;
+    }
+}
+
+/* ============================================
+   LARGE SCREENS (992px - 1399px)
+   ============================================ */
+@media (min-width: 992px) and (max-width: 1399.98px) {
+    .container-xl {
+        max-width: 960px;
+    }
+}
+
+/* ============================================
+   MEDIUM SCREENS - TABLETS (768px - 991px)
+   ============================================ */
+@media (max-width: 991.98px) {
+    /* Typography adjustments */
+    h1, .app-page-title {
+        font-size: 1.75rem !important;
+    }
+    
+    h2 {
+        font-size: 1.5rem !important;
+    }
+    
+    h3 {
+        font-size: 1.25rem !important;
+    }
+    
+    /* Stat cards */
+    .stat-card-modern {
+        margin-bottom: 1rem;
+    }
+    
+    .stat-value {
+        font-size: 1.75rem !important;
+    }
+    
+    .stat-label {
+        font-size: 0.8rem !important;
+    }
+    
+    .stat-icon-modern {
+        width: 50px !important;
+        height: 50px !important;
+    }
+    
+    .stat-icon-modern i {
+        font-size: 1.25rem !important;
+    }
+    
+    /* Tables */
+    .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .table {
+        min-width: 600px;
+    }
+    
+    .table th,
+    .table td {
+        white-space: nowrap;
+        padding: 0.5rem !important;
+        font-size: 0.85rem;
+    }
+    
+    /* Cards */
+    .card {
+        margin-bottom: 1rem;
+    }
+    
+    .card-body {
+        padding: 1rem !important;
+    }
+    
+    /* Content cards */
+    .content-card-modern .card-body-modern {
+        padding: 1rem !important;
+    }
+    
+    /* Forms */
+    .form-control,
+    .form-select {
+        font-size: 0.95rem;
+    }
+    
+    /* Buttons */
+    .btn {
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+    }
+    
+    .btn-sm {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.8rem;
+    }
+    
+    /* Sidebar adjustments */
+    .app-sidepanel {
+        width: 250px;
+    }
+    
+    /* Navigation */
+    .app-nav-item {
+        padding: 0.75rem 1rem;
+    }
+}
+
+/* ============================================
+   SMALL SCREENS - MOBILE LANDSCAPE (576px - 767px)
+   ============================================ */
+@media (max-width: 767.98px) {
+    /* Container padding */
+    .container-xl {
+        padding-left: 15px;
+        padding-right: 15px;
+    }
+    
+    /* Typography */
+    h1, .app-page-title {
+        font-size: 1.5rem !important;
+        margin-bottom: 1rem !important;
+    }
+    
+    h2 {
+        font-size: 1.35rem !important;
+    }
+    
+    h3, h4 {
+        font-size: 1.15rem !important;
+    }
+    
+    h5 {
+        font-size: 1rem !important;
+    }
+    
+    /* Stat cards - Stack vertically */
+    .stat-card-modern {
+        margin-bottom: 0.75rem;
+    }
+    
+    .stat-value {
+        font-size: 1.5rem !important;
+    }
+    
+    .stat-label {
+        font-size: 0.75rem !important;
+    }
+    
+    .stat-meta small {
+        font-size: 0.7rem !important;
+    }
+    
+    .stat-icon-modern {
+        width: 45px !important;
+        height: 45px !important;
+    }
+    
+    .stat-icon-modern i {
+        font-size: 1.1rem !important;
+    }
+    
+    /* Grid spacing */
+    .row.g-4 {
+        --bs-gutter-x: 1rem;
+        --bs-gutter-y: 1rem;
+    }
+    
+    /* Cards */
+    .card {
+        margin-bottom: 0.75rem;
+    }
+    
+    .card-body {
+        padding: 0.75rem !important;
+    }
+    
+    .card-header {
+        padding: 0.75rem !important;
+    }
+    
+    /* Content cards */
+    .content-card-modern {
+        margin-bottom: 1rem;
+    }
+    
+    .content-card-modern .card-header-modern {
+        padding: 0.75rem 1rem !important;
+    }
+    
+    .content-card-modern .card-body-modern {
+        padding: 0.75rem !important;
+    }
+    
+    .card-title-modern {
+        font-size: 1rem !important;
+    }
+    
+    /* Tables */
+    .table {
+        font-size: 0.8rem;
+    }
+    
+    .table th,
+    .table td {
+        padding: 0.4rem !important;
+    }
+    
+    /* Course status cards */
+    .display-4 {
+        font-size: 2rem !important;
+    }
+    
+    /* List items */
+    .list-group-item {
+        padding: 0.75rem !important;
+    }
+    
+    .item-title {
+        font-size: 0.9rem !important;
+    }
+    
+    .item-meta {
+        font-size: 0.75rem !important;
+    }
+    
+    /* Buttons */
+    .btn {
+        padding: 0.45rem 0.9rem;
+        font-size: 0.85rem;
+    }
+    
+    .btn-sm {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
+    }
+    
+    /* Quick actions grid */
+    .quick-actions .btn {
+        font-size: 0.8rem;
+        padding: 0.5rem 0.25rem;
+    }
+    
+    /* Progress bars */
+    .progress {
+        height: 6px !important;
+    }
+    
+    /* Badges */
+    .badge {
+        font-size: 0.7rem;
+        padding: 0.25em 0.5em;
+    }
+    
+    /* Sidebar - Full width overlay on mobile */
+    .app-sidepanel {
+        width: 100%;
+        max-width: 280px;
+    }
+    
+    /* Hide sidebar toggle text on mobile */
+    .sidepanel-toggler .nav-link-text {
+        display: none;
+    }
+    
+    /* Navigation items */
+    .app-nav-item {
+        padding: 0.65rem 0.75rem;
+    }
+    
+    /* Search bar */
+    .search-mobile input {
+        width: 100% !important;
+    }
+    
+    /* Flex direction changes */
+    .d-flex.justify-content-between {
+        flex-direction: column;
+        align-items: flex-start !important;
+    }
+    
+    .d-flex.justify-content-between > * {
+        margin-bottom: 0.5rem;
+    }
+    
+    /* System health cards */
+    .text-center.p-3 {
+        padding: 0.75rem !important;
+    }
+    
+    .text-center.p-3 h3 {
+        font-size: 1.5rem !important;
+    }
+    
+    .text-center.p-3 h6 {
+        font-size: 0.85rem !important;
+    }
+}
+
+/* ============================================
+   EXTRA SMALL SCREENS - MOBILE PORTRAIT (< 576px)
+   ============================================ */
+@media (max-width: 575.98px) {
+    /* Root font size adjustment */
+    html {
+        font-size: 14px;
+    }
+    
+    /* Container */
+    .container-xl {
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+    
+    .app-content {
+        padding: 1rem 0.5rem !important;
+    }
+    
+    /* Typography */
+    h1, .app-page-title {
+        font-size: 1.35rem !important;
+        margin-bottom: 0.75rem !important;
+    }
+    
+    h2 {
+        font-size: 1.2rem !important;
+    }
+    
+    h3, h4 {
+        font-size: 1.05rem !important;
+    }
+    
+    h5, h6 {
+        font-size: 0.95rem !important;
+    }
+    
+    /* Stat cards */
+    .stat-card-modern {
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-card-body {
+        padding: 0.75rem !important;
+    }
+    
+    .stat-value {
+        font-size: 1.35rem !important;
+    }
+    
+    .stat-label {
+        font-size: 0.7rem !important;
+    }
+    
+    .stat-meta small {
+        font-size: 0.65rem !important;
+    }
+    
+    .stat-icon-modern {
+        width: 40px !important;
+        height: 40px !important;
+    }
+    
+    .stat-icon-modern i {
+        font-size: 1rem !important;
+    }
+    
+    /* Grid adjustments - Full width on mobile */
+    .col-6 {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+    
+    /* Spacing */
+    .row.g-4 {
+        --bs-gutter-x: 0.75rem;
+        --bs-gutter-y: 0.75rem;
+    }
+    
+    .mb-4 {
+        margin-bottom: 1rem !important;
+    }
+    
+    /* Cards */
+    .card {
+        margin-bottom: 0.5rem;
+        border-radius: 8px;
+    }
+    
+    .card-body {
+        padding: 0.65rem !important;
+    }
+    
+    .card-header {
+        padding: 0.65rem !important;
+    }
+    
+    /* Content cards */
+    .content-card-modern {
+        margin-bottom: 0.75rem;
+    }
+    
+    .content-card-modern .card-header-modern {
+        padding: 0.65rem 0.75rem !important;
+    }
+    
+    .content-card-modern .card-body-modern {
+        padding: 0.65rem !important;
+    }
+    
+    .card-title-modern {
+        font-size: 0.95rem !important;
+    }
+    
+    .card-subtitle {
+        font-size: 0.7rem !important;
+    }
+    
+    /* Tables - Scroll horizontally */
+    .table-responsive {
+        margin-left: -12px;
+        margin-right: -12px;
+        padding: 0 12px;
+    }
+    
+    .table {
+        font-size: 0.75rem;
+        min-width: 500px;
+    }
+    
+    .table th,
+    .table td {
+        padding: 0.35rem !important;
+        font-size: 0.75rem;
+    }
+    
+    /* Course status display */
+    .display-4 {
+        font-size: 1.75rem !important;
+    }
+    
+    /* List items */
+    .list-group-item {
+        padding: 0.65rem !important;
+    }
+    
+    .item-title {
+        font-size: 0.85rem !important;
+    }
+    
+    .item-meta {
+        font-size: 0.7rem !important;
+    }
+    
+    /* Buttons */
+    .btn {
+        padding: 0.4rem 0.75rem;
+        font-size: 0.8rem;
+    }
+    
+    .btn-sm {
+        padding: 0.2rem 0.4rem;
+        font-size: 0.7rem;
+    }
+    
+    .btn-create-modern {
+        font-size: 0.8rem !important;
+        padding: 0.5rem 0.75rem !important;
+    }
+    
+    .btn-view-modern {
+        font-size: 0.75rem !important;
+        padding: 0.35rem 0.6rem !important;
+    }
+    
+    /* Quick actions - Stack in single column */
+    .quick-actions .row > div {
+        flex: 0 0 100%;
+        max-width: 100%;
+        margin-bottom: 0.5rem;
+    }
+    
+    .quick-actions .btn {
+        width: 100%;
+        font-size: 0.85rem;
+        padding: 0.6rem;
+    }
+    
+    /* Forms */
+    .form-control,
+    .form-select {
+        font-size: 0.9rem;
+        padding: 0.5rem;
+    }
+    
+    .form-label {
+        font-size: 0.85rem;
+        margin-bottom: 0.35rem;
+    }
+    
+    /* Progress bars */
+    .progress {
+        height: 5px !important;
+    }
+    
+    /* Badges */
+    .badge {
+        font-size: 0.65rem;
+        padding: 0.2em 0.4em;
+    }
+    
+    /* Icons */
+    .fa-2x {
+        font-size: 1.5em !important;
+    }
+    
+    .fa-3x {
+        font-size: 2em !important;
+    }
+    
+    /* Empty states */
+    .empty-state i {
+        font-size: 2rem !important;
+    }
+    
+    .empty-state-text {
+        font-size: 0.85rem !important;
+    }
+    
+    /* System health section */
+    .text-center.p-3 {
+        padding: 0.6rem !important;
+    }
+    
+    .text-center.p-3 h3 {
+        font-size: 1.25rem !important;
+        margin-bottom: 0.25rem !important;
+    }
+    
+    .text-center.p-3 h6 {
+        font-size: 0.75rem !important;
+    }
+    
+    .text-center.p-3 small {
+        font-size: 0.7rem !important;
+    }
+    
+    /* Recent activity items */
+    .d-flex.align-items-center.gap-3 {
+        gap: 0.75rem !important;
+    }
+    
+    /* Profile pictures */
+    .rounded-circle[style*="width: 40px"] {
+        width: 35px !important;
+        height: 35px !important;
+    }
+    
+    /* Flex adjustments */
+    .d-flex.justify-content-between {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 0.5rem;
+    }
+    
+    /* Alert messages */
+    .alert {
+        padding: 0.65rem;
+        font-size: 0.85rem;
+    }
+    
+    /* Modal adjustments */
+    .modal-body {
+        padding: 1rem;
+    }
+    
+    .modal-header,
+    .modal-footer {
+        padding: 0.75rem;
+    }
+    
+    /* Sidebar */
+    .app-sidepanel {
+        max-width: 260px;
+    }
+    
+    /* Navigation */
+    .app-nav-item {
+        padding: 0.6rem 0.75rem;
+        font-size: 0.9rem;
+    }
+    
+    /* Top contributors section */
+    .fw-semibold {
+        font-size: 0.85rem !important;
+    }
+    
+    /* Hover cards - Remove transform on mobile */
+    .hover-card:hover {
+        transform: none;
+    }
+    
+    .stat-card-modern:hover {
+        transform: translateY(-2px);
+    }
+}
+
+/* ============================================
+   LANDSCAPE ORIENTATION FIXES
+   ============================================ */
+@media (max-height: 600px) and (orientation: landscape) {
+    .stat-card-modern {
+        margin-bottom: 0.5rem;
+    }
+    
+    .card {
+        margin-bottom: 0.5rem;
+    }
+    
+    .mb-4 {
+        margin-bottom: 0.75rem !important;
+    }
+    
+    .app-content {
+        padding: 0.75rem !important;
+    }
+}
+
+/* ============================================
+   PRINT STYLES
+   ============================================ */
+@media print {
+    .app-sidepanel,
+    .app-header,
+    .btn,
+    .stretched-link {
+        display: none !important;
+    }
+    
+    .app-wrapper {
+        padding: 0;
+    }
+    
+    .app-content {
+        padding: 0 !important;
+    }
+    
+    .card,
+    .stat-card-modern {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+    
+    .table {
+        font-size: 10pt;
+    }
+}
+
+/* ============================================
+   ACCESSIBILITY - REDUCED MOTION
+   ============================================ */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+    
+    .pulsing-dot {
+        animation: none !important;
+    }
+}
+
+/* ============================================
+   TOUCH DEVICE OPTIMIZATIONS
+   ============================================ */
+@media (hover: none) and (pointer: coarse) {
+    /* Increase touch targets */
+    .btn {
+        min-height: 44px;
+        min-width: 44px;
+    }
+    
+    .form-control,
+    .form-select {
+        min-height: 44px;
+    }
+    
+    /* Remove hover effects on touch devices */
+    .hover-card:hover {
+        transform: none;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+    }
+    
+    .btn:hover {
+        transform: none;
+    }
+    
+    /* Better tap highlighting */
+    a,
+    button,
+    .btn {
+        -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+    }
+}

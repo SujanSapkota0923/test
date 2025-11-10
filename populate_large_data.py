@@ -381,20 +381,25 @@ def populate_all():
     # 4. CREATE ADMIN USER
     # ============================================
     print("👤 Creating Admin User...")
-    admin = User.objects.create(
+    admin, created = User.objects.get_or_create(
         username="admin",
-        email="admin@school.edu",
-        first_name="System",
-        last_name="Administrator",
-        role=User.Role.ADMIN,
-        is_staff=True,
-        is_superuser=True,
-        phone=generate_phone(),
-        bio="System administrator with full access to all features and settings.",
-        password=make_password("admin123")
+        defaults={
+            "email": "admin@school.edu",
+            "first_name": "System",
+            "last_name": "Administrator",
+            "role": User.Role.ADMIN,
+            "is_staff": True,
+            "is_superuser": True,
+            "phone": generate_phone(),
+            "bio": "System administrator with full access to all features and settings.",
+            "password": make_password("admin123")
+        }
     )
     existing_usernames.add("admin")
-    print(f"✓ Created admin user (username: admin, password: admin123)\n")
+    if created:
+        print(f"✓ Created admin user (username: admin, password: admin123)\n")
+    else:
+        print(f"✓ Using existing admin user (username: admin)\n")
     
     # ============================================
     # 5. CREATE TEACHERS (50)
@@ -445,7 +450,7 @@ def populate_all():
     print("👨‍🎓 Creating Students...")
     students = []
     
-    for i in range(300):
+    for i in range(1000):
         first_name = random.choice(FIRST_NAMES)
         last_name = random.choice(LAST_NAMES)
         username = generate_username(first_name, last_name, existing_usernames)
@@ -540,7 +545,7 @@ def populate_all():
     
     for student in students:
         # 60% chance of being enrolled
-        if random.random() < 0.6:
+        if random.random() < 0.9:
             course = random.choice(courses)
             student.course = course
             student.save()
