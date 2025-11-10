@@ -38,7 +38,7 @@
               {% endif %}
               "{{ search_term }}"
               <p class="mb-0 mt-2 small text-muted">
-                <strong>Tip:</strong> Use prefixes like <code>user:</code>, <code>student:</code>, <code>teacher:</code>, <code>course:</code>, <code>subject:</code>, <code>class:</code>, <code>stream:</code>, <code>video:</code>, or <code>live:</code> to filter results.
+                <strong>Tip:</strong> Use prefixes like <code>user:</code>, <code>student:</code>, <code>teacher:</code>, <code>course:</code>, <code>subject:</code>, <code>class:</code>, <code>stream:</code>, <code>video:</code>, <code>live:</code>, <code>payment:</code>, or <code>verification:</code> to filter results.
               </p>
               <p class="mb-0 mt-2 small">
                 <strong>Results found in:</strong>
@@ -52,6 +52,8 @@
                 {% if videos|length > 0 %}<span class="badge bg-danger me-1">Videos ({{ videos|length }})</span>{% endif %}
                 {% if live_classes|length > 0 %}<span class="badge bg-success me-1">Live Classes ({{ live_classes|length }})</span>{% endif %}
                 {% if enrollments|length > 0 %}<span class="badge bg-primary me-1">Enrollments ({{ enrollments|length }})</span>{% endif %}
+                {% if payment_methods|length > 0 %}<span class="badge bg-warning me-1">Payment Methods ({{ payment_methods|length }})</span>{% endif %}
+                {% if payment_verifications|length > 0 %}<span class="badge bg-danger me-1">Payment Verifications ({{ payment_verifications|length }})</span>{% endif %}
               </p>
             </div>
           </div>
@@ -503,8 +505,127 @@
         </div>
         {% endif %}
         
+        <!-- Payment Methods Results -->
+        {% if payment_methods %}
+        <div class="app-card app-card-orders-table shadow-sm mb-4">
+          <div class="app-card-header p-3">
+            <div class="row align-items-center">
+              <div class="col">
+                <h4 class="app-card-title mb-0">
+                  <i class="fas fa-credit-card text-warning me-2"></i>
+                  Payment Methods ({{ payment_methods|length }})
+                </h4>
+              </div>
+            </div>
+          </div>
+          <div class="app-card-body">
+            <div class="table-responsive">
+              <table class="table table-hover mb-0">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Description</th>
+                    <th>Status</th>
+                    <th>Created By</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for method in payment_methods %}
+                  <tr>
+                    <td><strong>{{ method.name }}</strong></td>
+                    <td>{{ method.description|truncatewords:15 }}</td>
+                    <td>
+                      {% if method.is_active %}
+                        <span class="badge bg-success"><i class="fas fa-check-circle"></i> Active</span>
+                      {% else %}
+                        <span class="badge bg-secondary"><i class="fas fa-times-circle"></i> Inactive</span>
+                      {% endif %}
+                    </td>
+                    <td>{{ method.created_by.username }}</td>
+                    <td>
+                      <a href="{% url 'dashboard:payment_method_detail' method.pk %}" class="btn btn-sm btn-primary">
+                        <i class="fas fa-eye"></i> View
+                      </a>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+        
+        <!-- Payment Verifications Results -->
+        {% if payment_verifications %}
+        <div class="app-card app-card-orders-table shadow-sm mb-4">
+          <div class="app-card-header p-3">
+            <div class="row align-items-center">
+              <div class="col">
+                <h4 class="app-card-title mb-0">
+                  <i class="fas fa-file-invoice-dollar text-danger me-2"></i>
+                  Payment Verifications ({{ payment_verifications|length }})
+                </h4>
+              </div>
+            </div>
+          </div>
+          <div class="app-card-body">
+            <div class="table-responsive">
+              <table class="table table-hover mb-0">
+                <thead>
+                  <tr>
+                    <th>Student</th>
+                    <th>Course</th>
+                    <th>Amount</th>
+                    <th>Payment Method</th>
+                    <th>Transaction ID</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for verification in payment_verifications %}
+                  <tr>
+                    <td>
+                      <div>{{ verification.user.get_full_name|default:verification.user.username }}</div>
+                      <small class="text-muted">@{{ verification.user.username }}</small>
+                    </td>
+                    <td>{{ verification.course.title|truncatewords:5 }}</td>
+                    <td><strong>${{ verification.amount }}</strong></td>
+                    <td><span class="badge bg-info">{{ verification.payment_method.name }}</span></td>
+                    <td>
+                      {% if verification.transaction_id %}
+                        <code>{{ verification.transaction_id|truncatewords:3 }}</code>
+                      {% else %}
+                        <span class="text-muted">-</span>
+                      {% endif %}
+                    </td>
+                    <td>
+                      {% if verification.verified %}
+                        <span class="badge bg-success"><i class="fas fa-check-circle"></i> Verified</span>
+                      {% else %}
+                        <span class="badge bg-warning"><i class="fas fa-clock"></i> Pending</span>
+                      {% endif %}
+                    </td>
+                    <td>{{ verification.created_at|date:"M d, Y" }}</td>
+                    <td>
+                      <a href="{% url 'dashboard:payment_verification_detail' verification.pk %}" class="btn btn-sm btn-primary">
+                        <i class="fas fa-eye"></i> View
+                      </a>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+        
         <!-- No Results -->
-        {% if not users and not students and not teachers and not courses and not subjects and not levels and not streams and not videos and not live_classes and not enrollments %}
+        {% if not users and not students and not teachers and not courses and not subjects and not levels and not streams and not videos and not live_classes and not enrollments and not payment_methods and not payment_verifications %}
         <div class="alert alert-warning">
           <div class="text-center py-5">
             <i class="fas fa-search fa-3x text-muted mb-3"></i>
@@ -526,6 +647,8 @@
               • Use <code>user:john</code> to search only users<br>
               • Use <code>student:jane</code> to search only students<br>
               • Use <code>course:physics</code> to search only courses<br>
+              • Use <code>payment:paypal</code> to search payment methods<br>
+              • Use <code>verification:john</code> to search payment verifications<br>
               • And many more prefixes available!
             </p>
           </div>

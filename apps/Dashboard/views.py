@@ -1113,6 +1113,8 @@ def global_search_view(request):
         'videos': [],
         'live_classes': [],
         'enrollments': [],
+        'payment_methods': [],
+        'payment_verifications': [],
         'error': None,
     }
     
@@ -1146,6 +1148,11 @@ def global_search_view(request):
         'live': 'live_classes',
         'enrollment': 'enrollments',
         'enrollments': 'enrollments',
+        'payment': 'payment_methods',
+        'payments': 'payment_methods',
+        'method': 'payment_methods',
+        'verification': 'payment_verifications',
+        'verifications': 'payment_verifications',
     }
     
     if ':' in query:
@@ -1259,6 +1266,26 @@ def global_search_view(request):
                 role=models.User.Role.STUDENT,
                 course__isnull=False
             )[:20])
+        
+        # Search Payment Methods
+        if search_all or search_type == 'payment_methods':
+            results['payment_methods'] = list(models.PaymentMethod.objects.filter(
+                Q(name__icontains=search_term) |
+                Q(description__icontains=search_term)
+            )[:20])
+        
+        # Search Payment Verifications
+        if search_all or search_type == 'payment_verifications':
+            results['payment_verifications'] = list(models.PaymentVerification.objects.filter(
+                Q(user__username__icontains=search_term) |
+                Q(user__first_name__icontains=search_term) |
+                Q(user__last_name__icontains=search_term) |
+                Q(course__title__icontains=search_term) |
+                Q(payment_method__name__icontains=search_term) |
+                Q(transaction_id__icontains=search_term) |
+                Q(remarks__icontains=search_term) |
+                Q(verification_notes__icontains=search_term)
+            ).select_related('user', 'course', 'payment_method', 'verified_by')[:20])
     
     except Exception as e:
         # Log the error and show a friendly message
