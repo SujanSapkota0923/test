@@ -1,5 +1,7 @@
 
 from django import forms
+from django.contrib.auth.forms import UserCreationForm
+from django.forms import inlineformset_factory
 from .models import User, AcademicLevel, Stream, Subject, LiveClass, Course, Video, PaymentMethod, PaymentVerification
 
 class UserForm(forms.ModelForm):
@@ -300,3 +302,50 @@ class PaymentVerificationAdminForm(forms.ModelForm):
             'verification_notes': 'Add any notes about the verification process',
             'verified': 'Check this box to approve the payment and enroll the user in the course',
         }
+
+
+# ==========================
+# Dashboard / compatibility forms
+# ==========================
+
+
+class UserSignUpForm(UserCreationForm):
+    class Meta:
+        model = User
+        fields = ['username', 'password1', 'password2', 'role', 'phone', 'profile_picture', 'first_name', 'last_name']
+
+
+class UserLoginForm(forms.Form):
+    username = forms.CharField(widget=forms.TextInput(attrs={'placeholder': 'Username'}))
+    password = forms.CharField(widget=forms.PasswordInput(attrs={'placeholder': 'Password'}))
+
+
+class UserCreateForm(UserCreationForm):
+    class Meta:
+        model = User
+        fields = ['username', 'first_name', 'last_name', 'email', 'password1', 'password2', 'role', 'phone', 'profile_picture', 'academic_level']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['password1'].widget.attrs.update({'class': 'form-control'})
+        self.fields['password2'].widget.attrs.update({'class': 'form-control'})
+
+
+# Provide a VideoForm alias for compatibility with older imports
+class VideoForm(VideoUploadForm):
+    """Alias/wrapper around VideoUploadForm kept for compatibility."""
+    pass
+
+
+# Inline formset for Course -> Video (used by dashboard)
+VideoFormSet = inlineformset_factory(
+    Course,
+    Video,
+    fields=['title', 'description', 'url', 'course', 'level', 'subject', 'stream', 'teacher', 'cost', 'image'],
+    extra=1,
+    can_delete=True,
+)
+
+
+# Backwards-compatible name used earlier in the dashboard code
+VideoFormSetInline = VideoFormSet

@@ -21,6 +21,8 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('course/', include('apps.Course.urls')),
-    path('', include('apps.Dashboard.urls')),
+    # Expose the app under two prefixes; use distinct namespaces to avoid
+    # namespace collisions when reversing URLs.
+    path('course/', include(('apps.Course.urls', 'course'), namespace='course')),
+    path('', include(('apps.Course.urls', 'dashboard'), namespace='dashboard')),
 ]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

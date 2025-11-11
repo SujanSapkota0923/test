@@ -314,9 +314,10 @@ class PaymentVerification(models.Model):
     )
     payment_method = models.ForeignKey(
         PaymentMethod, 
-        on_delete=models.CASCADE, 
+        on_delete=models.PROTECT, 
         related_name="payment_verifications"
     )
+    
     amount = models.DecimalField(
         max_digits=8, 
         decimal_places=2,
