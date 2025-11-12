@@ -1,4 +1,4 @@
-
+altgraph @ file:///AppleInternal/Library/BuildRoots/39d9dc1a-2111-11f0-be06-226177e5bb69/Library/Caches/com.apple.xbs/Sources/python3/altgraph-0.17.2-py2.py3-none-any.whl
 asgiref==3.9.1
 async-timeout==5.0.1
 blinker==1.9.0
@@ -10,38 +10,47 @@ django-debug-toolbar==6.1.0
 django-model-utils==5.0.0
 django-redis==6.0.0
 exceptiongroup==1.3.0
+Faker==37.12.0
+flake8==7.3.0
 Flask==3.1.1
-
+future @ file:///AppleInternal/Library/BuildRoots/39d9dc1a-2111-11f0-be06-226177e5bb69/Library/Caches/com.apple.xbs/Sources/python3/future-0.18.2-py3-none-any.whl
 hexdump==3.3
 idna==3.10
 importlib_metadata==8.7.0
 iniconfig==2.1.0
 itsdangerous==2.2.0
 Jinja2==3.1.6
-
+macholib @ file:///AppleInternal/Library/BuildRoots/39d9dc1a-2111-11f0-be06-226177e5bb69/Library/Caches/com.apple.xbs/Sources/python3/macholib-1.15.2-py2.py3-none-any.whl
 MarkupSafe==3.0.2
+mccabe==0.7.0
 more-itertools==10.8.0
 mpmath==1.3.0
 packaging==25.0
 pillow==11.3.0
 pluggy==1.6.0
 psycopg2-binary==2.9.11
+pycodestyle==2.14.0
 pycryptodome==3.23.0
+pyflakes==3.4.0
 Pygments==2.19.2
 pytest==8.4.1
 python-dotenv==1.1.1
 python-evtx==0.8.1
 redis==7.0.1
 requests==2.32.4
-
+six @ file:///AppleInternal/Library/BuildRoots/39d9dc1a-2111-11f0-be06-226177e5bb69/Library/Caches/com.apple.xbs/Sources/python3/six-1.15.0-py2.py3-none-any.whl
 sqlparse==0.5.3
 sympy==1.14.0
 tomli==2.2.1
 typing_extensions==4.14.1
+tzdata==2025.2
 urllib3==2.5.0
 uuid==1.30
 uv==0.8.6
 Werkzeug==3.1.3
 zipp==3.23.0
 
-Faker
+# API dependencies for Django REST Framework
+djangorestframework>=3.14.0
+djangorestframework-authtoken>=1.0.0
+django-filter>=23.0

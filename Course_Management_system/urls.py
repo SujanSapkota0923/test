@@ -25,4 +25,8 @@ urlpatterns = [
     # namespace collisions when reversing URLs.
     path('course/', include(('apps.Course.urls', 'course'), namespace='course')),
     path('', include(('apps.Course.urls', 'dashboard'), namespace='dashboard')),
+
+    path('api/', include(('apps.api.urls', 'api'), namespace='api')),
+    path('api-auth/', include('rest_framework.urls'))
+
 ]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

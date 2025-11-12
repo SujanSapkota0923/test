@@ -382,7 +382,7 @@ def populate_all():
     # ============================================
     print("👤 Creating Admin User...")
     admin, created = User.objects.get_or_create(
-        username="admin",
+        username="a",
         defaults={
             "email": "admin@school.edu",
             "first_name": "System",
@@ -392,7 +392,7 @@ def populate_all():
             "is_superuser": True,
             "phone": generate_phone(),
             "bio": "System administrator with full access to all features and settings.",
-            "password": make_password("admin123")
+            "password": make_password("a")
         }
     )
     existing_usernames.add("admin")
@@ -402,16 +402,16 @@ def populate_all():
         print(f"✓ Using existing admin user (username: admin)\n")
     
     # ============================================
-    # 5. CREATE TEACHERS (50)
+    # 5. CREATE TEACHERS (5)
     # ============================================
     print("👨‍🏫 Creating Teachers...")
     teachers = []
-    
-    for i in range(50):
+
+    for i in range(5):
         first_name = random.choice(FIRST_NAMES)
         last_name = random.choice(LAST_NAMES)
         username = generate_username(first_name, last_name, existing_usernames)
-        
+
         # Pick subject expertise
         expertise = random.choice(subjects)
         years = random.randint(3, 25)
@@ -450,7 +450,7 @@ def populate_all():
     print("👨‍🎓 Creating Students...")
     students = []
     
-    for i in range(1000):
+    for i in range(200):
         first_name = random.choice(FIRST_NAMES)
         last_name = random.choice(LAST_NAMES)
         username = generate_username(first_name, last_name, existing_usernames)
@@ -496,7 +496,7 @@ def populate_all():
     print("🎓 Creating Courses...")
     courses = []
     
-    for i in range(80):
+    for i in range(20):
         subject = random.choice(subjects)
         title = random.choice(COURSE_TITLES).format(subject=subject.name)
         
@@ -538,7 +538,7 @@ def populate_all():
     print(f"✓ Created {len(courses)} courses\n")
     
     # ============================================
-    # 8. ENROLL STUDENTS IN COURSES (60% enrollment rate)
+    # 8. ENROLL STUDENTS IN COURSES (90% enrollment rate)
     # ============================================
     print("📝 Enrolling Students in Courses...")
     enrollment_count = 0
@@ -554,7 +554,7 @@ def populate_all():
     print(f"✓ Enrolled {enrollment_count} students in courses\n")
     
     # ============================================
-    # 9. CREATE LIVE CLASSES (150)
+    # 9. CREATE LIVE CLASSES (9)
     # ============================================
     print("📹 Creating Live Classes...")
     live_classes = []
@@ -574,7 +574,7 @@ def populate_all():
         ]
         topics_by_subject[subject.id] = topics
     
-    for i in range(150):
+    for i in range(9):
         subject = random.choice(subjects)
         teacher = random.choice(teachers)
         level = subject.levels
@@ -648,12 +648,12 @@ def populate_all():
     print(f"✓ Created {len(live_classes)} live classes\n")
     
     # ============================================
-    # 10. CREATE VIDEOS (200)
+    # 10. CREATE VIDEOS (20)
     # ============================================
     print("🎬 Creating Videos...")
     videos = []
     
-    for i in range(200):
+    for i in range(20):
         subject = random.choice(subjects)
         teacher = random.choice(teachers)
         level = subject.levels
@@ -743,7 +743,7 @@ def populate_all():
     print(f"✓ Created {len(payment_methods)} payment methods\n")
     
     # ============================================
-    # 12. CREATE PAYMENT VERIFICATIONS (100)
+    # 12. CREATE PAYMENT VERIFICATIONS (10)
     # ============================================
     print("💰 Creating Payment Verifications...")
     verifications = []
@@ -752,7 +752,7 @@ def populate_all():
     active_pms = [pm for pm in payment_methods if pm.is_active]
     paid_courses = [c for c in courses if c.cost > 0]
     
-    for i in range(100):
+    for i in range(10):
         student = random.choice(students)
         course = random.choice(paid_courses)
         pm = random.choice(active_pms)
@@ -775,7 +775,7 @@ def populate_all():
         ])
         
         # 70% verified, 30% pending
-        is_verified = random.random() < 0.7
+        is_verified = random.random() < 0.9
         verified_by = admin if is_verified else None
         verified_at = timezone.now() - timedelta(days=random.randint(1, 30)) if is_verified else None
         verification_notes = random.choice([
