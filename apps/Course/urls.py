@@ -5,7 +5,6 @@ from . import views
 # Keep an application namespace to preserve reverse('dashboard:...') usage
 app_name = 'dashboard'
 
-
 # Dashboard routes (consolidated)
 urlpatterns = [
     path('', views.dashboard_view, name='index'),

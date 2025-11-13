@@ -114,14 +114,14 @@ class Command(BaseCommand):
             slug = f"level-{i}"
             level, created = AcademicLevel.objects.get_or_create(
                 slug=slug,
-                defaults={"name": name, "order": i, "allows_streams": i % 2 == 0, "capacity": random.choice([None, 30, 50])},
+                defaults={"name": name, "order": i, "allowed_streams": i % 2 == 0, "capacity": random.choice([None, 30, 50])},
             )
             levels.append(level)
 
         # Streams (for levels that allow streams)
         streams = []
         for level in levels:
-            if level.allows_streams:
+            if level.allowed_streams:
                 for sname in ["Science", "Management"]:
                     slug = f"{level.slug}-{sname.lower()}"
                     stream, _ = Stream.objects.get_or_create(name=sname, slug=slug, level=level)

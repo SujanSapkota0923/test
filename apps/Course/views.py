@@ -555,10 +555,10 @@ def dashboard_view(request):
         level_students = sum(1 for s in students if s.academic_level == level)
         students_by_level[level.id] = level_students
         utilization = round((level_students / level.capacity * 100), 1) if level.capacity else 0
-        level_details.append({'level': level, 'student_count': level_students, 'utilization': utilization, 'subject_count': level.subjects.count(), 'stream_count': level.streams.count() if level.allows_streams else 0})
+        level_details.append({'level': level, 'student_count': level_students, 'utilization': utilization, 'subject_count': level.subjects.count(), 'stream_count': level.streams.count() if level.allowed_streams else 0})
 
     most_populated_levels = sorted(level_details, key=lambda x: x['student_count'], reverse=True)[:3]
-    levels_with_streams = sum(1 for l in levels if l.allows_streams)
+    levels_with_streams = sum(1 for l in levels if l.allowed_streams)
 
     context.update({'levels': levels, 'level_count': levels.count(), 'limited_levels': limited_levels, 'total_capacity': total_capacity, 'students_by_level': students_by_level, 'level_details': level_details, 'most_populated_levels': most_populated_levels, 'levels_with_streams': levels_with_streams, 'capacity_utilization': round((student_count / total_capacity * 100) if total_capacity > 0 else 0, 1),})
 
@@ -927,3 +927,4 @@ def global_search_view(request):
     results['search_type'] = search_type
     results['search_term'] = search_term
     return render(request, 'dashboard/search_results.html', results)
+

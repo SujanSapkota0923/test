@@ -47,8 +47,8 @@ class UserAdmin(BaseUserAdmin):
 
 @admin.register(AcademicLevel)
 class AcademicLevelAdmin(admin.ModelAdmin):
-    list_display = ["name", "order", "allows_streams", "capacity", "capacity_remaining"]
-    list_filter = ["allows_streams"]
+    list_display = ["name", "order", "allowed_streams", "capacity", "capacity_remaining"]
+    list_filter = ["allowed_streams"]
     search_fields = ["name"]
     prepopulated_fields = {"slug": ("name",)}
     ordering = ["order"]

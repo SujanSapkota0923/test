@@ -51,12 +51,12 @@ class UserForm(forms.ModelForm):
 class AcademicLevelForm(forms.ModelForm):
     class Meta:
         model = AcademicLevel
-        fields = ['name', 'slug', 'order', 'allows_streams', 'capacity']
+        fields = ['name', 'slug', 'order', 'allowed_streams', 'capacity']
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter level name (e.g., Grade 10)'}),
             'slug': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter slug (e.g., grade-10)'}),
             'order': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Enter order number'}),
-            'allows_streams': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'allowed_streams': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'capacity': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Enter capacity (optional)'}),
         }
 

@@ -291,12 +291,12 @@ def populate_all():
     ]
     
     levels = {}
-    for name, slug, order, allows_streams, capacity in levels_data:
+    for name, slug, order, allowed_streams, capacity in levels_data:
         level = AcademicLevel.objects.create(
             name=name,
             slug=slug,
             order=order,
-            allows_streams=allows_streams,
+            allowed_streams=allowed_streams,
             capacity=capacity
         )
         levels[name] = level
@@ -357,7 +357,7 @@ def populate_all():
                 )
                 
                 # Add streams if level allows
-                if level.allows_streams and level.name in streams:
+                if level.allowed_streams and level.name in streams:
                     # Add relevant streams
                     relevant_streams = []
                     if category == "Computer Science":
@@ -381,25 +381,31 @@ def populate_all():
     # 4. CREATE ADMIN USER
     # ============================================
     print("👤 Creating Admin User...")
+    admin_username = 'admin'
+    admin_password = os.getenv('POPULATE_ADMIN_PASSWORD', 'admin123')
     admin, created = User.objects.get_or_create(
-        username="a",
+        username=admin_username,
         defaults={
-            "email": "admin@school.edu",
-            "first_name": "System",
-            "last_name": "Administrator",
-            "role": User.Role.ADMIN,
-            "is_staff": True,
-            "is_superuser": True,
-            "phone": generate_phone(),
-            "bio": "System administrator with full access to all features and settings.",
-            "password": make_password("a")
+            'email': 'admin@school.edu',
+            'first_name': 'System',
+            'last_name': 'Administrator',
+            'role': User.Role.ADMIN,
+            'is_staff': True,
+            'is_superuser': True,
+            'phone': generate_phone(),
+            'bio': 'System administrator with full access to all features and settings.',
         }
     )
-    existing_usernames.add("admin")
+    # Ensure the admin has a usable password
+    if created or not admin.has_usable_password():
+        admin.set_password(admin_password)
+        admin.save()
+
+    existing_usernames.add(admin_username)
     if created:
-        print(f"✓ Created admin user (username: admin, password: admin123)\n")
+        print(f"✓ Created admin user (username: {admin_username}, password: {admin_password})\n")
     else:
-        print(f"✓ Using existing admin user (username: admin)\n")
+        print(f"✓ Using existing admin user (username: {admin_username})\n")
     
     # ============================================
     # 5. CREATE TEACHERS (5)
@@ -633,11 +639,11 @@ def populate_all():
             description=description,
             is_recorded=is_recorded,
             recording_url=recording_url,
-            extra=json.dumps({
+            extra={
                 "platform": random.choice(["Zoom", "Google Meet", "Microsoft Teams", "Jitsi"]),
                 "meeting_id": meeting_id,
                 "password": ''.join(random.choices('0123456789', k=6)) if random.random() < 0.5 else None
-            })
+            }
         )
         
         live_classes.append(live_class)
@@ -705,7 +711,7 @@ def populate_all():
         )
         
         # Add streams if applicable
-        if level.allows_streams and level.name in streams:
+        if level.allowed_streams and level.name in streams:
             video_streams = random.sample(streams[level.name], k=random.randint(1, len(streams[level.name])))
             video.stream.add(*video_streams)
         
@@ -732,7 +738,7 @@ def populate_all():
         pm = PaymentMethod.objects.create(
             name=pm_data["name"],
             description=pm_data["desc"],
-            details=json.dumps(details),
+            details=details,
             is_active=random.choice([True, True, True, False]),  # 75% active
             display_order=idx,
             created_by=admin

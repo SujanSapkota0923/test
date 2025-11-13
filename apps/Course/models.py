@@ -62,9 +62,11 @@ class User(AbstractUser):
     @property
     def is_teacher(self):
         return self.role == self.Role.TEACHER
+    
     @property
     def is_student(self):
         return self.role == self.Role.STUDENT
+    
     @property
     def is_admin(self):
         return self.role == self.Role.ADMIN
@@ -86,7 +88,7 @@ class AcademicLevel(models.Model): # for representing grades/years 1 for class o
     slug = models.SlugField(max_length=50, unique=True) # for URL use like 'grade-10', 'bachelor', etc. for easy referencing
     order = models.IntegerField(help_text="Sorting order (smaller -> earlier in schooling).")
     # Optional: marks whether this level can have streams (like +2)
-    allows_streams = models.BooleanField(default=False)
+    allowed_streams = models.BooleanField(default=False)
     capacity = models.PositiveIntegerField(blank=True, null=True, help_text="Maximum number of students allowed in this level (optional).")
     # all students from this academic level can be accessed by related_name 'students' from User model
 
@@ -111,7 +113,7 @@ class AcademicLevel(models.Model): # for representing grades/years 1 for class o
 class Stream(models.Model):
     """
     Optional division inside some AcademicLevels (e.g. +2 Science, +2 Management).
-    Only attach Streams to AcademicLevels where allows_streams=True.
+    Only attach Streams to AcademicLevels where allowed_streams=True.
     """
     name = models.CharField(max_length=50)
     slug = models.SlugField(max_length=50)
@@ -121,7 +123,7 @@ class Stream(models.Model):
         unique_together = ("name", 'level')
 
     def clean(self):
-        if not self.level.allows_streams:
+        if not self.level.allowed_streams:
             raise ValidationError("Cannot add a Stream to an AcademicLevel that doesn't allow streams.")
 
     def __str__(self):
@@ -223,7 +225,7 @@ class LiveClass(models.Model):
     def __str__(self):
         return f"{self.title} — {self.subject} ({self.start_time:%Y-%m-%d %H:%M})"
 
-# extra curricular activities refers to course in this project.
+
 
 class Video(models.Model):
     '''
