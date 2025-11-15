@@ -32,20 +32,38 @@ class UserForm(forms.ModelForm):
     
     def clean(self):
         cleaned_data = super().clean()
+        # Only validate passwords when they are present (i.e., during creation or when password fields are shown)
         password = cleaned_data.get('password')
         confirm_password = cleaned_data.get('confirm_password')
-        
-        if password != confirm_password:
-            raise forms.ValidationError("Passwords do not match")
-        
+
+        if 'password' in self.fields and (password or confirm_password):
+            if password != confirm_password:
+                raise forms.ValidationError("Passwords do not match")
+
         return cleaned_data
     
     def save(self, commit=True):
         user = super().save(commit=False)
-        user.set_password(self.cleaned_data['password'])
+        # Only set password if provided (password fields are absent when editing existing users)
+        password = self.cleaned_data.get('password')
+        if password:
+            user.set_password(password)
         if commit:
             user.save()
         return user
+
+    def __init__(self, *args, **kwargs):
+        """Remove password fields when editing an existing user instance.
+
+        Password+confirm_password are present for creation forms but removed when
+        editing so the edit form doesn't show or require a password change.
+        """
+        super().__init__(*args, **kwargs)
+        # If the form is bound to an existing user (editing), hide password fields
+        if self.instance and getattr(self.instance, 'pk', None):
+            # Remove password fields so they don't appear in the edit form
+            self.fields.pop('password', None)
+            self.fields.pop('confirm_password', None)
 
 
 class AcademicLevelForm(forms.ModelForm):

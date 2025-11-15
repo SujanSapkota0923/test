@@ -1,6 +1,6 @@
 from collections import OrderedDict
 from rest_framework import serializers
-from apps.Course.models import Course, AcademicLevel, User, Stream, Subject, LiveClass
+from apps.Course.models import Course, PaymentMethod, Video,AcademicLevel, User, Stream, Subject, LiveClass
 
 
 class UserCreateSerializer(serializers.ModelSerializer):
@@ -68,6 +68,10 @@ class CourseSerializer(serializers.ModelSerializer):
             'created_at',
         ]
         read_only_fields = ['id', 'created_at']
+        extra_kwargs = {
+            'start_time': {'required': False, 'allow_null': True},
+            'end_time': {'required': False, 'allow_null': True},
+        }
 
 
 class AcademicLevelSerializer(serializers.ModelSerializer):
@@ -117,3 +121,20 @@ class LiveClassPublicSerializer(serializers.ModelSerializer):
         fields = ['id', 'title']  # Only name (title) visible to public
         read_only_fields = ['id', 'title']
 
+class VideoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Video
+        fields = '__all__'
+        read_only_fields = ['video_url', 'title', 'description', 'duration']
+
+class VideoPublicSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Video
+        fields = [ 'id','title', 'teacher', 'course']
+        read_only_fields = ['id', 'title', 'teacher', 'course']
+        
+        
+class PaymentMethodSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PaymentMethod
+        fields = ['name', 'details', 'image', 'is_active', 'display_order']

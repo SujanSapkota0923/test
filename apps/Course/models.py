@@ -155,8 +155,8 @@ class Course(models.Model):
     description = models.TextField(blank=True)
     participants = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name="courses", blank=True)
     cost = models.DecimalField(max_digits=8, decimal_places=2, default=0, help_text="Cost to participate in the activity (0 for free)")
-    start_time = models.DateTimeField()
-    end_time = models.DateTimeField()
+    start_time = models.DateTimeField(blank=True, null=True)
+    end_time = models.DateTimeField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     image = models.ImageField(upload_to='activity_images/', blank=True, null=True)
 

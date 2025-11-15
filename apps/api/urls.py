@@ -5,7 +5,7 @@ from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
 )
-from .views import CourseViewSet, AcademicLevelViewSet, UserViewSet,StreamViewSet, LiveClassViewSet
+from .views import CourseViewSet, AcademicLevelViewSet, PaymentMethodViewSet, UserViewSet,StreamViewSet, LiveClassViewSet, VideoViewSet
 
 router = DefaultRouter()
 router.register(r'courses', CourseViewSet, basename='course')
@@ -13,6 +13,8 @@ router.register(r'users', UserViewSet, basename='user')
 router.register(r'classes', AcademicLevelViewSet, basename='academic-level')
 router.register(r'streams', StreamViewSet, basename='stream')
 router.register(r'liveclasses', LiveClassViewSet, basename='liveclass')
+router.register(r'videos', VideoViewSet, basename='video')  
+router.register(r'payment-methods', PaymentMethodViewSet, basename='paymentmethod')
 
 urlpatterns = [
     path('', include(router.urls)),

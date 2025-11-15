@@ -2,9 +2,9 @@ from rest_framework import viewsets
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
-from apps.Course.models import Course, User, AcademicLevel, Stream, Subject, LiveClass
-from .serializer import CourseSerializer, UserSerializer, UserCreateSerializer, AcademicLevelSerializer, \
-    StreamSerializer, SubjectSerializer, LiveClassSerializer, LiveClassPublicSerializer
+from apps.Course.models import Course, PaymentMethod, User, AcademicLevel, Stream, Subject, LiveClass, Video
+from .serializer import CourseSerializer, PaymentMethodSerializer, UserSerializer, UserCreateSerializer, AcademicLevelSerializer, \
+    StreamSerializer, SubjectSerializer, LiveClassSerializer, LiveClassPublicSerializer, VideoSerializer, VideoPublicSerializer
 
 
 class UserViewSet(ModelViewSet):
@@ -112,4 +112,56 @@ class LiveClassViewSet(viewsets.ReadOnlyModelViewSet):
             serializer = LiveClassPublicSerializer(instance)
         
         return Response(serializer.data)
+
+class VideoViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = Video.objects.all()
+    permission_classes = [AllowAny]
+
+    def get_serializer_class(self):
+        if self.request.user.is_authenticated:
+            return VideoSerializer
+        return VideoPublicSerializer
+
+    # simlar logic as in liveclassviewset is applied here for list and retrieve methods
+    def list(self, request, *args, **kwargs):
+        user = request.user
+        if user.is_authenticated:
+            enrolled_courses = user.course
+            enrolled_videos = Video.objects.filter(course=enrolled_courses)
+            other_videos = Video.objects.exclude(course=enrolled_courses)
+            enrolled_serializer = VideoSerializer(enrolled_videos, many=True)
+            other_serializer = VideoPublicSerializer(other_videos, many=True)
+            
+            combined_data = {
+                'enrolled_videos': enrolled_serializer.data,
+                'other_videos': other_serializer.data
+            }
+            
+            return Response(combined_data)
+        else:
+            queryset = self.get_queryset()
+            serializer = VideoPublicSerializer(queryset, many=True)
+            return Response(serializer.data)
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()  # Get the Video instance
+        
+        if request.user.is_authenticated:
+            # Check if user is enrolled in the course that contains this video
+            if request.user.course == instance.course:
+                serializer = VideoSerializer(instance)
+            else:
+                serializer = VideoPublicSerializer(instance)
+        else:
+            serializer = VideoPublicSerializer(instance)
+        
+        return Response(serializer.data)
+    
+class PaymentMethodViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = PaymentMethod.objects.all()
+    serializer_class = PaymentMethodSerializer
+    permission_classes = [AllowAny]
+    
+
+    
 

@@ -517,17 +517,61 @@ def dashboard_view(request):
     }
 
     # Courses
-    extra_activities = models.Course.objects.prefetch_related('enrolled_students').annotate(participant_count=Count('enrolled_students')).order_by('-created_at')
+# Courses
+    extra_activities = (
+        models.Course.objects
+        .prefetch_related('enrolled_students')
+        .annotate(participant_count=Count('enrolled_students'))
+        .order_by('-created_at')
+    )
+    
+    # Basic stats
     total_courses = extra_activities.count()
     free_courses = extra_activities.filter(cost=0).count()
     paid_courses = total_courses - free_courses
-    total_course_enrollments = sum(course.participant_count for course in extra_activities)
-    course_revenue_stats = models.Course.objects.aggregate(total_potential=Sum('cost'), avg_cost=Avg('cost'), max_cost=Max('cost'), min_paid_cost=Min('cost', filter=Q(cost__gt=0)))
-    ongoing_courses = [c for c in extra_activities if c.start_time <= now <= c.end_time]
-    upcoming_courses = [c for c in extra_activities if c.start_time > now]
-    past_courses = [c for c in extra_activities if c.end_time < now]
-    popular_courses = sorted(extra_activities, key=lambda x: x.participant_count, reverse=True)[:5]
-    recent_courses = list(extra_activities.filter(created_at__gte=week_ago))
+    
+    total_course_enrollments = sum(c.participant_count for c in extra_activities)
+    
+    course_revenue_stats = models.Course.objects.aggregate(
+        total_potential=Sum('cost'),
+        avg_cost=Avg('cost'),
+        max_cost=Max('cost'),
+        min_paid_cost=Min('cost', filter=Q(cost__gt=0))
+    )
+    
+    # Ongoing courses: only courses with valid start & end dates
+    ongoing_courses = extra_activities.filter(
+        start_time__isnull=False,
+        end_time__isnull=False,
+        start_time__lte=now,
+        end_time__gte=now
+    )
+    
+    # Upcoming courses: only courses with valid start date
+    upcoming_courses = extra_activities.filter(
+        start_time__isnull=False,
+        start_time__gt=now
+    )
+    
+    # Past courses: only courses with valid end date
+    past_courses = extra_activities.filter(
+        end_time__isnull=False,
+        end_time__lt=now
+    )
+    
+    # Popular courses (top 5 by participant count)
+    popular_courses = sorted(
+        extra_activities,
+        key=lambda x: x.participant_count,
+        reverse=True
+    )[:5]
+    
+    # Recently created courses (within last week)
+    recent_courses = list(
+        extra_activities.filter(created_at__gte=week_ago)
+    )
+    
+    
 
     context.update({
         'extra_activities': extra_activities,
